@@ -1,20 +1,23 @@
-CC ?= clang
-CFLAGS ?=
-DC ?= ldc2
-DFLAGS ?= --unittest
-LINKFLAGS ?=
-LEX ?= flex
-LEXFLAGS ?= --yylineno
-YACC ?= bison
-YACCFLAGS ?=
+CC := clang
+CFLAGS := 
+DC := ldc2
+DFLAGS := --unittest
+LINKFLAGS :=
+LEX := flex
+LEXFLAGS := --yylineno
+YACC := bison
+YACCFLAGS :=
 
-OBJECTS := build/lex.o build/grammar.o build/app.o
+OBJECTS := build/lex.o build/grammar.o build/app.o build/parse.o
 
 all: $(OBJECTS)
 	$(DC) $(LINKFLAGS) -of=clok $(OBJECTS)
 
 build/app.o: source/app.d
 	$(DC) $(DFLAGS) -c -of=build/app.o source/app.d
+
+build/parse.o: source/parse.d
+	$(DC) $(DFLAGS) -c -of=build/parse.o source/parse.d
 
 build/lex.o: source/lexer.l build/grammar
 	$(LEX) $(LEXFLAGS) -o build/lex.yy.c source/lexer.l

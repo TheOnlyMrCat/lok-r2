@@ -1,17 +1,17 @@
 module parse;
 
 import std.string;
-import std.experimental.logging;
+import std.experimental.logger;
 
 struct ASTNode {
     int type;
 
     ASTNode* children;
+    int count;
 }
 
 extern(C) int yyparse();
 
-extern(C) int yyerror(const char *p) {
-    string s = p.fromStringz;
-    error(s);
+extern(C) void yyerror(const char *p) {
+    error(p.fromStringz);
 }

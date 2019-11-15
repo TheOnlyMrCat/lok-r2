@@ -1,17 +1,39 @@
 %{
+#include <stdlib.h>
 #include "grammar.h"
+
+extern int findMultichar(char*);
 %}
 
 %option noyywrap
 %%
 
-[:alpha:][:alnum:]* { yylval.valC = yytext; return ID; }
+run/[^[:alnum:]_]  { return findMultichar("run"); }
+load/[^[:alnum:]_] { return findMultichar("load"); }
 
-[0-9]+(\.[0-9]+)
+[[:alpha:]_][[:alnum:]_]* { yylval.valC = yytext; return ID; }
 
-"{" { return LBRACE; }
-"}" { return RBRACE; }
-"[" { return LBRACKET; }
-"]" { return RBRACKET; }
-"(" { return LPAR; }
-")" { return RPAR; }
+[+-]?[:digit:]+\.[:digit:]+([eE][+-]?[:digit]+)?f?          { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with decimal point
+[+-]?0[xX][:xdigit:]+\.[:xdigit:]+([pP][+-]?[:xdigit:]+)?f? { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with decimal point
+[+-]?[:digit:]+[eE][+-]?[:digit]+f?                         { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with exponent
+[+-]?0[xX][:xdigit:]+[pP][+-]?[:xdigit:]+f?                 { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with exponent
+[+-]?[:digit:]+f                                            { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point integer
+[+-]?0[xX][:digit:]+f                                       { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point integer
+
+[+-]?[:digit:]+       { yylval.valI = strtol(yytext, NULL, 10); return INTEGER; } // Decimal integer literal
+[+-]?0[xX][:xdigit:]+ { yylval.valI = strtol(yytext, NULL, 16); return INTEGER; } // Hex integer literal
+
+\'\\x[:xdigit:]*\'   { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\u[:xdigit:]{4}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\U[:xdigit:]{8}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\.\'              //TODO
+\'.\'                { yylval.valI = (long) yytext[1]; return CHAR; }
+
+\"[^\"\n]\" { yylval.valC = yytext; return STRING; }
+
+:: { return findMultichar("::"); }
+-> { return findMultichar("->"); }
+
+<<EOF>> { return 0; }
+[:space:] // Ignore
+. { return yytext[0]; }
