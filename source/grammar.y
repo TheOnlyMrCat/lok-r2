@@ -2,15 +2,6 @@
 #include <string.h>
 
 extern int yyerror(const char *p);
-
-struct ASTNode {
-    int type;
-
-    struct ASTNode *children;
-    int count;
-};
-
-typedef struct ASTNode node;
 %}
 
 %token-table
@@ -22,6 +13,18 @@ typedef struct ASTNode node;
     double valF;
     char *valC;
 }
+
+%{
+struct ASTNode {
+    int type;
+    YYSTYPE value;
+
+    struct ASTNode *children;
+    int count;
+};
+
+typedef struct ASTNode node;
+%}
 
 %token <valC> ID STRING
 %token <valF> FLOAT
