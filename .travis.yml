@@ -1,0 +1,9 @@
+language: d
+
+script: make CC=gcc
+
+addons:
+  apt:
+    packages:
+    - gcc
+    - libc6-dev
