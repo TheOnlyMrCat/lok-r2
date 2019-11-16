@@ -25,7 +25,7 @@ build/lex.o: source/lexer.l build/grammar.h
 
 build/grammar.c: build/grammar.h
 build/grammar.h: source/grammar.y source/nodetypes.d
-	$(YACC) $(YACCFLAGS) -d -o build/grammar.c source/grammar.y
+	$(YACC) $(YACCFLAGS) -d --output-file=build/grammar.c source/grammar.y
 
 build/grammar.o: build/grammar.c
 	$(CC) $(CFLAGS) -c -o build/grammar.o build/grammar.c
