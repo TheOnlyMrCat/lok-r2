@@ -58,7 +58,7 @@ int backslashSequence(char c) {
             return '\r';
         case 't':
             return '\t';
-        case 'v';
+        case 'v':
             return '\v';
         case '\\':
             return '\\';

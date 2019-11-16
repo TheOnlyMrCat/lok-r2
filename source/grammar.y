@@ -2,6 +2,15 @@
 #include <string.h>
 
 extern int yyerror(const char *p);
+
+/* Yes, this d file is being included. This is the easiest way I could think of
+ * to define the node types once only
+ */
+#include "nodetypes.d"
+/* Semicolon to avoid a compile error with the enum delcaration for C. Not in
+ * the D file because I hate warnings
+ */
+;
 %}
 
 %token-table
@@ -9,7 +18,7 @@ extern int yyerror(const char *p);
 %define parse.lac full
 
 %union {
-    long valI;
+    long long valI;
     double valF;
     char *valC;
 }
