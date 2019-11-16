@@ -3,6 +3,8 @@
 #include "grammar.h"
 
 extern int findMultichar(char*);
+
+int backslashSequence(char);
 %}
 
 %option noyywrap
@@ -26,7 +28,7 @@ load/[^[:alnum:]_] { return findMultichar("load"); }
 \'\\x[:xdigit:]*\'   { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
 \'\\u[:xdigit:]{4}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
 \'\\U[:xdigit:]{8}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
-\'\\.\'              //TODO
+\'\\.\'              { yylval.valI = backslashSequence(yytext[2]); return CHAR; }
 \'.\'                { yylval.valI = (long) yytext[1]; return CHAR; }
 
 \"[^\"\n]\" { yylval.valC = yytext; return STRING; }
@@ -37,3 +39,30 @@ load/[^[:alnum:]_] { return findMultichar("load"); }
 <<EOF>> { return 0; }
 [:space:] // Ignore
 . { return yytext[0]; }
+
+%%
+
+int backslashSequence(char c) {
+    switch (c) {
+        case 'a':
+            return '\a';
+        case 'b':
+            return '\b';
+        case 'e':
+            return '\e';
+        case 'f':
+            return '\f';
+        case 'n':
+            return '\n';
+        case 'r':
+            return '\r';
+        case 't':
+            return '\t';
+        case 'v';
+            return '\v';
+        case '\\':
+            return '\\';
+        case '\'':
+            return '\'';
+    }
+}
