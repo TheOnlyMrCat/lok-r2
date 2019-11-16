@@ -14,7 +14,7 @@ all: build $(OBJECTS)
 	$(DC) $(LINKFLAGS) -of=clok $(OBJECTS)
 
 build:
-	test build || mkdir build
+	test -d build || mkdir build
 
 build/app.o: source/app.d
 	$(DC) $(DFLAGS) -c -of=build/app.o source/app.d
