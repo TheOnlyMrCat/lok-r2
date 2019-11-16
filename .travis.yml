@@ -2,8 +2,12 @@ language: d
 
 script: make CC=gcc
 
+d:
+- dmd
+- ldc
+
 addons:
   apt:
     packages:
-    - gcc
-    - libc6-dev
+    - bison
+    - flex
