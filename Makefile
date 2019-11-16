@@ -10,8 +10,11 @@ YACCFLAGS :=
 
 OBJECTS := build/lex.o build/grammar.o build/app.o build/parsing.o
 
-all: $(OBJECTS)
+all: build $(OBJECTS)
 	$(DC) $(LINKFLAGS) -of=clok $(OBJECTS)
+
+build:
+	test build || mkdir build
 
 build/app.o: source/app.d
 	$(DC) $(DFLAGS) -c -of=build/app.o source/app.d
@@ -25,7 +28,7 @@ build/lex.o: source/lexer.l build/grammar.h
 
 build/grammar.c: build/grammar.h
 build/grammar.h: source/grammar.y source/nodetypes.d
-	$(YACC) $(YACCFLAGS) -d --output-file=build/grammar.c source/grammar.y
+	$(YACC) $(YACCFLAGS) -d -o build/grammar.c source/grammar.y
 
 build/grammar.o: build/grammar.c
 	$(CC) $(CFLAGS) -c -o build/grammar.o build/grammar.c
