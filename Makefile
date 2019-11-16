@@ -1,11 +1,11 @@
-CC := clang
+CC ?= clang
 CFLAGS := -Isource
-DC := ldc2
+DC ?= ldc2
 DFLAGS := --unittest -I=./source
 LINKFLAGS :=
-LEX := flex
+LEX ?= flex
 LEXFLAGS := --yylineno
-YACC := bison
+YACC ?= bison
 YACCFLAGS :=
 
 OBJECTS := build/lex.o build/grammar.o build/app.o build/parsing.o
