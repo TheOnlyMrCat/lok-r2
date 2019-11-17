@@ -39,7 +39,7 @@ void printAST(ASTNode node, int depth) {
     }
 
     depth++;
-    for (int i = 0; i < node.count; i++) {
+    for (int i = 0; i < node.cCount; i++) {
         printAST(node.children[i], depth);
     }
 }

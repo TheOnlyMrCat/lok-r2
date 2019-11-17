@@ -1,9 +1,9 @@
 load(std:stdio)
 
-foo: (i32, i32, i32) -> i32 :: (a, b, c) {
-    return a + b + c;
+foo: (i32, i32, i32) -> i32 =! {
+
 }
 
-run :: (argc: i32, argv: string) {
+run =! (argc: i32, argv: string) {
 
 }

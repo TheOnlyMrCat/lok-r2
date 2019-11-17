@@ -2,18 +2,16 @@
 #include <stdlib.h>
 #include "grammar.h"
 
-extern int findMultichar(char*);
-
 int backslashSequence(char);
 %}
 
 %option noyywrap
 %%
 
-run/[^[:alnum:]_]  { return findMultichar("run"); }
-load/[^[:alnum:]_] { return findMultichar("load"); }
+run/[^[:alnum:]_]  { return RUNK; }
+load/[^[:alnum:]_] { return LOADK; }
 
-[[:alpha:]_][[:alnum:]_]* { yylval.valC = yytext; return ID; }
+[[:alpha:]_][[:alnum:]_]* { yylval.valC = strdup(yytext); return ID; }
 
 [+-]?[:digit:]+\.[:digit:]+([eE][+-]?[:digit]+)?f?          { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with decimal point
 [+-]?0[xX][:xdigit:]+\.[:xdigit:]+([pP][+-]?[:xdigit:]+)?f? { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with decimal point
@@ -31,10 +29,11 @@ load/[^[:alnum:]_] { return findMultichar("load"); }
 \'\\.\'              { yylval.valI = backslashSequence(yytext[2]); return CHAR; }
 \'.\'                { yylval.valI = (long) yytext[1]; return CHAR; }
 
-\"[^\"\n]\" { yylval.valC = yytext; return STRING; }
+\"[^\"\n]\" { yylval.valC = strdup(yytext); return STRING; }
 
-:: { return findMultichar("::"); }
--> { return findMultichar("->"); }
+:: { return DBLCOLON; }
+-> { return RSARROW; }
+=! { return CONSTEQ; }
 
 <<EOF>> { return 0; }
 [:space:] // Ignore

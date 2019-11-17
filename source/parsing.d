@@ -13,7 +13,8 @@ struct ASTNode {
     TKVal value;
 
     ASTNode* children;
-    int count;
+    int cCap;
+    int cCount;
 
     alias value this;
 }
