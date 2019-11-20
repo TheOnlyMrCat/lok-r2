@@ -6,17 +6,23 @@ import nodetypes;
 import std.string;
 import std.experimental.logger;
 
+import core.stdc.errno;
 import core.stdc.stdio;
+import core.stdc.string : strerror;
 
-struct ASTNode {
+struct CNode {
     int type;
     TKVal value;
 
-    ASTNode* children;
     int cCap;
     int cCount;
+    CNode** children;
+}
 
-    alias value this;
+struct ASTNode {
+    NodeType type;
+    TKVal value;
+    ASTNode[] children;
 }
 
 union TKVal {
@@ -25,29 +31,74 @@ union TKVal {
     char *valC;
 }
 
+string currentFile;
+
 extern(C) {
-    extern FILE *yyin;
-    extern ASTNode *parseResult;
+    extern __gshared CNode parseResult;
+    extern __gshared int yylineno;
+    extern __gshared int column;
 
     int yyparse();
+    int openFile(const char *filename);
+    void clearResult();
+    void freeResult();
 
     void yyerror(const char *p) {
-        error(p.fromStringz);
+        errorf("%s:%d:%d: %s", currentFile, yylineno, column, p.fromStringz);
     }
 }
 
 void parse(string file) {
-    yyin = fopen(file.toStringz, "r");
+    trace("Opening file");
+    if (openFile(file.toStringz) != 0) {
+        errorf("Failed to open file: %s", strerror(errno));
+        return;
+    }
+
+    trace("Beginning parse");
+    clearResult();
+    currentFile = file;
+    if (yyparse() == 0) {
+        info("Parsing succeeded");
+    } else {
+        info("Parsing failed");
+    }
+    printAST(recursiveConvert(&parseResult), 0);
+    freeResult();
+}
+
+ASTNode recursiveConvert(CNode* cn) {
+    ASTNode astn;
+    astn.type = cast(NodeType) cn.type;
+    astn.value = cn.value;
+
+    astn.children.length = cn.cCount;
+    for (int i = 0; i < cn.cCount; i++) {
+        astn.children[i] = recursiveConvert(cn.children[i]);
+    }
+    return astn;
 }
 
 bool isStringType(ASTNode node) {
-    return true;
+    switch (node.type) {
+    case NodeType.FUNCDEC:
+    case NodeType.PARAM:
+    case NodeType.LIBNAME:
+    case NodeType.FILEPATH:
+    case NodeType.TYPESINGLE:
+        return true;
+    default: return false;
+    }
 }
 
 bool isIntType(ASTNode node) {
-    return true;
+    switch (node.type) {
+    case NodeType.RUN:
+        return true;
+    default: return false;
+    }
 }
 
 bool isFloatType(ASTNode node) {
-    return true;
+    return false;
 }

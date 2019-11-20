@@ -17,7 +17,7 @@ extern int yyerror(const char *p);
 }
 
 %code {
-/* Yes, this d file is being included. This is the easiest way I could think of
+/* Yes, this D file is being included. This is the easiest way I could think of
  * to define the node types once only. The only other way would be to run the
  * parsing file through a C preprocessor, which has obvious downsides.
  */
@@ -26,17 +26,23 @@ extern int yyerror(const char *p);
 /* Semicolon to avoid a compile error with the enum delcaration for C. Not in
  * the D file because I hate warnings
  */
+}
 
+%code provides {
 struct ASTNode {
-    int type;
-    YYSTYPE value;
+  int type;
+  YYSTYPE value;
 
-    struct ASTNode *children;
-    int cCap;
-    int cCount;
+  int cCap;
+  int cCount;
+  struct ASTNode **children;
 };
 
 typedef struct ASTNode Node;
+
+Node parseResult;
+
+int column;
 }
 
 %define parse.error verbose
@@ -58,26 +64,27 @@ typedef struct ASTNode Node;
   Node *nalloc(int children, int type) {
     Node *n = (Node*) malloc(sizeof(Node));
     n->type = type;
-    n->children = (Node*) malloc(sizeof(Node) * children);
+    n->children = (Node**) malloc(sizeof(Node) * children);
     n->cCap = children;
+    n->cCount = 0;
     return n;
   }
 
   Node *addChild(Node *parent, Node *child) {
     if (parent->cCount >= parent->cCap) {
-      parent->children = realloc(parent->children, parent->cCap * 2);
+      parent->cCap *= 2;
+      parent->children = realloc(parent->children, parent->cCap);
     }
-    parent->children[++parent->cCount] = *child;
-    free(child);
-    return &parent->children[parent->cCount];
+    parent->children[++parent->cCount] = child;
+    return parent->children[parent->cCount];
   }
 }
 
 %%
 top:
     %empty
-  | LoadExpression top
-  | NamespaceItem
+  | LoadExpression top { addChild(&parseResult, $1); }
+  | NamespaceItem top  { addChild(&parseResult, $1); }
   ;
 
 LoadExpression:
@@ -85,8 +92,8 @@ LoadExpression:
   ;
 
 FileLocator:
-    FilePath[file]                      { $$ = nalloc(1, NONE); addChild($$, nalloc(0, NONE))->value.valC = $file; }
-  | LibraryName[lib] ':' FilePath[file] { $$ = nalloc(2, NONE); addChild($$, nalloc(0, NONE))->value.valC = $lib; addChild($$, nalloc(0, NONE))->value.valC = $file; }
+    FilePath[file]                      { $$ = nalloc(1, NONE); addChild($$, nalloc(0, FILEPATH))->value.valC = $file; }
+  | LibraryName[lib] ':' FilePath[file] { $$ = nalloc(2, NONE); addChild($$, nalloc(0, LIBNAME))->value.valC = $lib; addChild($$, nalloc(0, FILEPATH))->value.valC = $file; }
   ;
 
 FilePath:
@@ -157,8 +164,8 @@ TupleType:
   ;
 
 TupleTypes:
-    Type            { $$ = nalloc(1, TYPEMULTI); addChild($$, $1); }
-  | TupleTypes Type { $$ = $1; addChild($$, $2); }
+    Type                { $$ = nalloc(1, TYPEMULTI); addChild($$, $1); }
+  | TupleTypes ',' Type { $$ = $1; addChild($$, $3); }
   ;
 
 FunctionType:

@@ -2,7 +2,7 @@
  * When released, the order will be normalised.
  */
 
-enum {
+enum NodeType {
     NONE,
     LOAD,
     RUN,
@@ -13,5 +13,7 @@ enum {
     TYPEFN,
     PARAMLIST,
     PARAM,
-    FUNCDEC
+    FUNCDEC,
+    LIBNAME,
+    FILEPATH
 }
