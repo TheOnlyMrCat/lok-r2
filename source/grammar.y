@@ -33,16 +33,18 @@ struct ASTNode {
   int type;
   YYSTYPE value;
 
-  int cCap;
-  int cCount;
+  int cCap; // The index of the next child that will require a reallocation to initialise
+  int cCount; // The index of the child to be initialised next
   struct ASTNode **children;
 };
 
 typedef struct ASTNode Node;
 
-Node parseResult;
+Node *parseResult;
 
 int column;
+
+extern Node *nalloc(int children, int type);
 }
 
 %define parse.error verbose
@@ -52,7 +54,7 @@ int column;
 %token <valF> FLOAT
 %token <valI> INTEGER CHAR
 
-%token DBLCOLON "::" RSARROW "->" CONSTEQ "=!" RUNK "run" LOADK "load"
+%token DBLCOLON "::" RSARROW "->" CONSTEQ "#=" RUNK "run" LOADK "load"
 
 %type <valC> LibraryName FilePath BasicDeclarator TypeName
 %type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
@@ -61,30 +63,38 @@ int column;
 %type <valN> BlockStatement
 
 %code {
-  Node *nalloc(int children, int type) {
-    Node *n = (Node*) malloc(sizeof(Node));
-    n->type = type;
-    n->children = (Node**) malloc(sizeof(Node) * children);
-    n->cCap = children;
-    n->cCount = 0;
-    return n;
-  }
+extern void doLog(const char*);
 
-  Node *addChild(Node *parent, Node *child) {
-    if (parent->cCount >= parent->cCap) {
+Node *nalloc(int children, int type) {
+  Node *n = (Node*) malloc(sizeof(Node));
+  n->type = type;
+  n->value.valI = 0;
+  if (children > 0) n->children = (Node**) malloc(sizeof(Node) * children);
+  n->cCap = children;
+  n->cCount = 0;
+  return n;
+}
+
+Node *addChild(Node *parent, Node *child) {
+  if (parent->cCount >= parent->cCap) {
+    if (parent->cCap <= 0) {
+      parent->cCap = 1;
+      parent->children = malloc(sizeof(Node**));
+    } else {
       parent->cCap *= 2;
       parent->children = realloc(parent->children, parent->cCap);
     }
-    parent->children[++parent->cCount] = child;
-    return parent->children[parent->cCount];
   }
+  parent->children[parent->cCount] = child;
+  return parent->children[parent->cCount++]; // ++ doesn't affect result
+}
 }
 
 %%
 top:
     %empty
-  | LoadExpression top { addChild(&parseResult, $1); }
-  | NamespaceItem top  { addChild(&parseResult, $1); }
+  | LoadExpression top { addChild(parseResult, $1); }
+  | NamespaceItem top  { addChild(parseResult, $1); }
   ;
 
 LoadExpression:
@@ -112,14 +122,14 @@ NamespaceItem:
   ;
 
 FuncDeclaration:
-    BasicDeclarator FunctionType "=!" FuncDefinition { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
-  | BasicDeclarator FunctionType '=' FuncDefinition  { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
-  | BasicDeclarator FunctionType ';'                 { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $2); }
+    BasicDeclarator FunctionType CONSTEQ FuncDefinition { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
+  | BasicDeclarator FunctionType '=' FuncDefinition     { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
+  | BasicDeclarator FunctionType ';'                    { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $2); }
   ;
 
 RunDeclaration:
-    "run" "=!" FuncDefinition[func]         { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = 0; }
-  | "run" INTEGER "=!" FuncDefinition[func] { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = $2; }
+    "run" CONSTEQ FuncDefinition[func]         { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = 0; }
+  | "run" INTEGER CONSTEQ FuncDefinition[func] { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = $2; }
   ;
 
 FuncDefinition:
@@ -141,7 +151,7 @@ ParameterList:
   ;
 
 Parameter:
-    ID                         { $$ = nalloc(0, PARAM); $$->value.valC = $1; }
+    ID                   { $$ = nalloc(0, PARAM); $$->value.valC = $1; }
   | BasicDeclarator Type { $$ = nalloc(1, PARAM); $$->value.valC = $1; addChild($$, $2); }
   ;
 

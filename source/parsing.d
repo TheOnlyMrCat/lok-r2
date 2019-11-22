@@ -23,6 +23,8 @@ struct ASTNode {
     NodeType type;
     TKVal value;
     ASTNode[] children;
+
+    alias value this;
 }
 
 union TKVal {
@@ -34,17 +36,21 @@ union TKVal {
 string currentFile;
 
 extern(C) {
-    extern __gshared CNode parseResult;
+    extern __gshared CNode* parseResult;
     extern __gshared int yylineno;
     extern __gshared int column;
 
     int yyparse();
     int openFile(const char *filename);
-    void clearResult();
+    void allocResult();
     void freeResult();
 
     void yyerror(const char *p) {
         errorf("%s:%d:%d: %s", currentFile, yylineno, column, p.fromStringz);
+    }
+
+    void doLog(const char *p) {
+        warningf(p.fromStringz.idup);
     }
 }
 
@@ -56,14 +62,14 @@ void parse(string file) {
     }
 
     trace("Beginning parse");
-    clearResult();
+    allocResult();
     currentFile = file;
     if (yyparse() == 0) {
         info("Parsing succeeded");
     } else {
         info("Parsing failed");
     }
-    printAST(recursiveConvert(&parseResult), 0);
+    printAST(recursiveConvert(parseResult), 0);
     freeResult();
 }
 

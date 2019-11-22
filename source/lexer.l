@@ -32,9 +32,9 @@ load/[^A-Za-z0-9_] { column += 4; return LOADK; }
 
 \"[^\"\n]\" { yylval.valC = strdup(yytext); column += strlen(yytext); return STRING; }
 
-:: { column += 2; return DBLCOLON; }
--> { column += 2; return RSARROW; }
-=! { column += 2; return CONSTEQ; }
+::   { column += 2; return DBLCOLON; }
+->   { column += 2; return RSARROW; }
+"#=" { column += 2; return CONSTEQ; }
 
 <<EOF>>    { return 0; }
 [ \t]+     { column += strlen(yytext); }

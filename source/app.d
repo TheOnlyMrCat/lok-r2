@@ -77,17 +77,17 @@ void printAST(ASTNode node, int depth) {
     writef("(%d)", node.type);
 
     if (node.isStringType) {
-        writeln(node.valC.fromStringz);
+        writeln(" \"", node.valC.fromStringz, "\"");
     } else if (node.isIntType) {
-        writeln(node.valI);
+        writeln(" ", node.valI);
     } else if (node.isFloatType) {
-        writeln(node.valF);
+        writeln(" ", node.valF);
     } else {
         writeln();
     }
 
     depth++;
-    for (int i = 0; i < node.cCount; i++) {
+    for (int i = 0; i < node.children.length; i++) {
         printAST(node.children[i], depth);
     }
 }
