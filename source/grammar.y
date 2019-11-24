@@ -93,8 +93,8 @@ Node *addChild(Node *parent, Node *child) {
 %%
 top:
     %empty
-  | LoadExpression top { addChild(parseResult, $1); }
-  | NamespaceItem top  { addChild(parseResult, $1); }
+  | top LoadExpression { addChild(parseResult, $2); }
+  | top NamespaceItem  { addChild(parseResult, $2); }
   ;
 
 LoadExpression:

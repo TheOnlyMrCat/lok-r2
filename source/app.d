@@ -77,7 +77,7 @@ void printAST(ASTNode node, int depth) {
     writef("(%d)", node.type);
 
     if (node.isStringType) {
-        writeln(" \"", node.valC.fromStringz, "\"");
+        writeln(" \"", node.valC, "\"");
     } else if (node.isIntType) {
         writeln(" ", node.valI);
     } else if (node.isFloatType) {

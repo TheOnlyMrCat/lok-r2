@@ -12,11 +12,17 @@ import core.stdc.string : strerror;
 
 struct CNode {
     int type;
-    TKVal value;
+    ValType value;
 
     int cCap;
     int cCount;
     CNode** children;
+
+    union ValType {
+        long valI;
+        double valF;
+        char *valC;
+    }
 }
 
 struct ASTNode {
@@ -27,10 +33,10 @@ struct ASTNode {
     alias value this;
 }
 
-union TKVal {
+struct TKVal {
     long valI;
     double valF;
-    char *valC;
+    string valC;
 }
 
 string currentFile;
@@ -76,7 +82,9 @@ void parse(string file) {
 ASTNode recursiveConvert(CNode* cn) {
     ASTNode astn;
     astn.type = cast(NodeType) cn.type;
-    astn.value = cn.value;
+    astn.valI = cn.value.valI;
+    astn.valF = cn.value.valF;
+    astn.valC = cn.value.valC.fromStringz.idup;
 
     astn.children.length = cn.cCount;
     for (int i = 0; i < cn.cCount; i++) {

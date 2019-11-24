@@ -66,4 +66,5 @@ int backslashSequence(char c) {
         case '\'':
             return '\'';
     }
+    return '\0';
 }
