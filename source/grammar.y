@@ -118,7 +118,7 @@ LibraryName:
 
 NamespaceItem:
     FuncDeclaration
-    RunDeclaration
+  | RunDeclaration
   ;
 
 FuncDeclaration:
