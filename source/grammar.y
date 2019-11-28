@@ -58,13 +58,13 @@ extern Node *nalloc(int children, int type);
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
 %token RSARROW "->" CONSTEQ "#=" RUNK "run" LOADK "load"
 
-%type <valC> LibraryName FilePath BasicDeclarator TypeName BinaryOperator PrefixOperator PostfixOperator
+%type <valC> LibraryName FilePath BasicDeclarator BinaryOperator PrefixOperator PostfixOperator
 %type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
 %type <valN> FuncDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
 %type <valN> BlockStatement Statements Statement
-%type <valN> Expression AssignExpression BasicExpression
-%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators
+%type <valN> Expression AssignExpression BasicExpression DeclExpression
+%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName
 
 %left "||"
 %left "^^"
@@ -173,7 +173,7 @@ Parameter:
   ;
 
 TypeName:
-    ID
+    QualifiedID
   ;
 
 Type:
@@ -183,7 +183,7 @@ Type:
   ;
 
 SingleType:
-    TypeName { $$ = nalloc(0, TYPESINGLE); $$->value.valC = $1; }
+    TypeName { $$ = nalloc(1, TYPESINGLE); addChild($$, $1); }
   ;
 
 TupleType:
@@ -214,7 +214,7 @@ Statements:
   ;
 
 Statement:
-    Expression
+    Expression ';'
   ;
 
 QualifiedID:
@@ -237,6 +237,7 @@ QualifiedIDWithOperators:
 Expression:
     AssignExpression
   | BasicExpression
+  | DeclExpression
   ;
 
 AssignExpression:
@@ -249,6 +250,11 @@ BasicExpression:
   | '(' Expression ')'                             { $$ = $2; }
   | BasicExpression BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   ;
+
+DeclExpression:
+    BasicDeclarator TypeName                { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $2); }
+  | BasicDeclarator TypeName '=' Expression { $$ = nalloc(2, EXPRDECL); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
+  | BasicDeclarator '=' Expression          { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $3); }
 
 BinaryOperator:
     '+'   { $$ = "+"; }

@@ -19,5 +19,6 @@ enum NodeType {
     QUALID,
     QUALIDOP,
     EXPRASSIG,
-    EXPRBASIC
+    EXPRBASIC,
+    EXPRDECL,
 }
