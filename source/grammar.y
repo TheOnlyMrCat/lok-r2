@@ -54,13 +54,30 @@ extern Node *nalloc(int children, int type);
 %token <valF> FLOAT
 %token <valI> INTEGER CHAR
 
-%token DBLCOLON "::" RSARROW "->" CONSTEQ "#=" RUNK "run" LOADK "load"
+%token DBLCOLON "::" DBLBAR "||" DBLAND "&&" DBLXOR "^^" DBLLEFT "<<" DBLRIGHT ">>" TPLRIGHT ">>>" DBLPLUS "++" DBLMINUS "--" DBLNOT "!!"
+%token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
+%token RSARROW "->" CONSTEQ "#=" RUNK "run" LOADK "load"
 
-%type <valC> LibraryName FilePath BasicDeclarator TypeName
+%type <valC> LibraryName FilePath BasicDeclarator TypeName BinaryOperator PrefixOperator PostfixOperator
 %type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
 %type <valN> FuncDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
-%type <valN> BlockStatement
+%type <valN> BlockStatement Statements Statement
+%type <valN> Expression AssignExpression BasicExpression
+%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators
+
+%left "||"
+%left "^^"
+%left "&&"
+%left '|'
+%left '^'
+%left '&'
+%left "==" "!="
+%left '<' "<=" '>' ">="
+%left "<=>"
+%left "<<" ">>" ">>>"
+%left '+' '-'
+%left '*' '/' '%'
 
 %code {
 extern void doLog(const char*);
@@ -187,5 +204,88 @@ BasicDeclarator:
   ;
 
 BlockStatement:
-    '{' '}' { $$ = nalloc(0, BLOCK); }
+    '{' '}'            { $$ = nalloc(0, BLOCK); }
+  | '{' Statements '}' { $$ = $2; }
+  ;
+
+Statements:
+    Statement            { $$ = nalloc(1, BLOCK); addChild($$, $1); }
+  | Statements Statement { $$ = $1; addChild($$, $2); }
+  ;
+
+Statement:
+    Expression
+  ;
+
+QualifiedID:
+    QualifiedIDPart                 { $$ = nalloc(1, QUALID); addChild($$, $1); }
+  | LibraryName ':' QualifiedIDPart { $$ = nalloc(2, QUALID); addChild($$, nalloc(0, LIBNAME))->value.valC = $1; addChild($$, $3); }
+  ;
+
+QualifiedIDPart:
+    ID                     { $$ = nalloc(0, NONE); $$->value.valC = $1; }
+  | QualifiedIDPart '.' ID { $$ = nalloc(0, NONE); $$->value.valC = $3; addChild($$, $1); }
+  ;
+
+QualifiedIDWithOperators:
+    QualifiedID                                { $$ = nalloc(1, QUALIDOP); addChild($$, $1); }
+  | PrefixOperator QualifiedID                 { $$ = nalloc(2, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valC = $1; addChild($$, $2); }
+  | QualifiedID PostfixOperator                { $$ = nalloc(2, QUALIDOP); addChild($$, $1); addChild($$, nalloc(0, NONE))->value.valC = $2; }
+  | PrefixOperator QualifiedID PostfixOperator { $$ = nalloc(3, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valC = $1; addChild($$, $2); addChild($$, nalloc(0, NONE))->value.valC = $3; }
+  ;
+
+Expression:
+    AssignExpression
+  | BasicExpression
+  ;
+
+AssignExpression:
+    QualifiedID '=' Expression                { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); }
+  | QualifiedID BinaryOperator '=' Expression { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $4); $$->value.valC = $2; }
+  ;
+
+BasicExpression:
+    QualifiedIDWithOperators                       { $$ = $1; }
+  | '(' Expression ')'                             { $$ = $2; }
+  | BasicExpression BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+  ;
+
+BinaryOperator:
+    '+'   { $$ = "+"; }
+  | '-'   { $$ = "-"; }
+  | '*'   { $$ = "*"; }
+  | '/'   { $$ = "/"; }
+  | '%'   { $$ = "%"; }
+  | '&'   { $$ = "&"; }
+  | '|'   { $$ = "|"; }
+  | '^'   { $$ = "^"; }
+  | "&&"  { $$ = "&&"; }
+  | "||"  { $$ = "||"; }
+  | "^^"  { $$ = "^^"; }
+  | "<<"  { $$ = "<<"; }
+  | ">>"  { $$ = ">>"; }
+  | ">>>" { $$ = ">>>"; }
+  | "=="  { $$ = "=="; }
+  | "!="  { $$ = "!="; }
+  | '<'   { $$ = "<"; }
+  | '>'   { $$ = ">"; }
+  | "<="  { $$ = "<="; }
+  | ">="  { $$ = ">="; }
+  | "<=>" { $$ = "<=>"; }
+  ;
+
+PrefixOperator:
+    '+'  { $$ = "+"; }
+  | '-'  { $$ = "-"; }
+  | '*'  { $$ = "*"; }
+  | '&'  { $$ = "&"; }
+  | "++" { $$ = "++"; }
+  | "--" { $$ = "--"; }
+  | '!'  { $$ = "!"; }
+  | "!!" { $$ = "!!"; }
+  ;
+
+PostfixOperator:
+    "++" { $$ = "++"; }
+  | "--" { $$ = "--"; }
   ;

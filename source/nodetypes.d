@@ -15,5 +15,9 @@ enum NodeType {
     PARAM,
     FUNCDEC,
     LIBNAME,
-    FILEPATH
+    FILEPATH,
+    QUALID,
+    QUALIDOP,
+    EXPRASSIG,
+    EXPRBASIC
 }

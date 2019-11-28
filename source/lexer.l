@@ -32,9 +32,23 @@ load/[^A-Za-z0-9_] { column += 4; return LOADK; }
 
 \"[^\"\n]\" { yylval.valC = strdup(yytext); column += strlen(yytext); return STRING; }
 
-::   { column += 2; return DBLCOLON; }
-->   { column += 2; return RSARROW; }
+"::" { column += 2; return DBLCOLON; }
+"->" { column += 2; return RSARROW; }
 "#=" { column += 2; return CONSTEQ; }
+"||" { column += 2; return DBLBAR; }
+"&&" { column += 2; return DBLAND; }
+"^^" { column += 2; return DBLXOR; }
+"<<" { column += 2; return DBLLEFT; }
+">>" { column += 2; return DBLRIGHT; }
+"++" { column += 2; return DBLPLUS; }
+"--" { column += 2; return DBLMINUS; }
+"!!" { column += 2; return DBLNOT; }
+"==" { column += 2; return DBLEQ; }
+"!=" { column += 2; return NOTEQ; }
+">=" { column += 2; return GTEQ; }
+"<=" { column += 2; return LTEQ; }
+
+">>>" { column += 3; return TPLRIGHT; }
 
 <<EOF>>    { return 0; }
 [ \t]+     { column += strlen(yytext); }
