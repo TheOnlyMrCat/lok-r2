@@ -16,6 +16,8 @@ extern int yyerror(const char *p);
   struct ASTNode *valN;
 }
 
+%locations
+
 %code {
 /* Yes, this D file is being included. This is the easiest way I could think of
  * to define the node types once only. The only other way would be to run the
@@ -58,13 +60,13 @@ extern Node *nalloc(int children, int type);
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
 %token RSARROW "->" CONSTEQ "#=" RUNK "run" LOADK "load"
 
-%type <valC> LibraryName FilePath BasicDeclarator BinaryOperator PrefixOperator PostfixOperator
+%type <valC> LibraryName FilePath BinaryOperator PrefixOperator PostfixOperator
 %type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
 %type <valN> FuncDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
 %type <valN> BlockStatement Statements Statement
 %type <valN> Expression AssignExpression BasicExpression DeclExpression
-%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName
+%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue
 
 %left "||"
 %left "^^"
@@ -78,6 +80,9 @@ extern Node *nalloc(int children, int type);
 %left "<<" ">>" ">>>"
 %left '+' '-'
 %left '*' '/' '%'
+
+%left "PostfixOperator"
+%right "PrefixOperator"
 
 %code {
 extern void doLog(const char*);
@@ -139,9 +144,9 @@ NamespaceItem:
   ;
 
 FuncDeclaration:
-    BasicDeclarator FunctionType CONSTEQ FuncDefinition { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
-  | BasicDeclarator FunctionType '=' FuncDefinition     { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
-  | BasicDeclarator FunctionType ';'                    { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $2); }
+    ID ':' FunctionType CONSTEQ FuncDefinition { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' FunctionType '=' FuncDefinition     { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' FunctionType ';'                    { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 RunDeclaration:
@@ -168,8 +173,8 @@ ParameterList:
   ;
 
 Parameter:
-    ID                   { $$ = nalloc(0, PARAM); $$->value.valC = $1; }
-  | BasicDeclarator Type { $$ = nalloc(1, PARAM); $$->value.valC = $1; addChild($$, $2); }
+    ID          { $$ = nalloc(0, PARAM); $$->value.valC = $1; }
+  | ID ':' Type { $$ = nalloc(1, PARAM); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 TypeName:
@@ -199,10 +204,6 @@ FunctionType:
     TupleType "->" Type { $$ = nalloc(2, TYPEFN); addChild($$, $1); addChild($$, $3); }
   ;
 
-BasicDeclarator:
-    ID ':' { $$ = $1; }
-  ;
-
 BlockStatement:
     '{' '}'            { $$ = nalloc(0, BLOCK); }
   | '{' Statements '}' { $$ = $2; }
@@ -223,15 +224,14 @@ QualifiedID:
   ;
 
 QualifiedIDPart:
-    ID                     { $$ = nalloc(0, NONE); $$->value.valC = $1; }
-  | QualifiedIDPart '.' ID { $$ = nalloc(0, NONE); $$->value.valC = $3; addChild($$, $1); }
+    ID                     { $$ = nalloc(0, QUALPART); $$->value.valC = $1; }
+  | ID '.' QualifiedIDPart { $$ = nalloc(0, QUALPART); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 QualifiedIDWithOperators:
-    QualifiedID                                { $$ = nalloc(1, QUALIDOP); addChild($$, $1); }
-  | PrefixOperator QualifiedID                 { $$ = nalloc(2, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valC = $1; addChild($$, $2); }
-  | QualifiedID PostfixOperator                { $$ = nalloc(2, QUALIDOP); addChild($$, $1); addChild($$, nalloc(0, NONE))->value.valC = $2; }
-  | PrefixOperator QualifiedID PostfixOperator { $$ = nalloc(3, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valC = $1; addChild($$, $2); addChild($$, nalloc(0, NONE))->value.valC = $3; }
+    QualifiedID                              { $$ = nalloc(1, QUALIDOP); addChild($$, $1); }
+  | PrefixOperator QualifiedIDWithOperators  { $$ = nalloc(2, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valC = $1; addChild($$, $2); }
+  | QualifiedIDWithOperators PostfixOperator { $$ = nalloc(2, QUALIDOP); addChild($$, $1); addChild($$, nalloc(0, NONE))->value.valC = $2; }
   ;
 
 Expression:
@@ -246,15 +246,24 @@ AssignExpression:
   ;
 
 BasicExpression:
-    QualifiedIDWithOperators                       { $$ = $1; }
+    BasicValue                                     { $$ = $1; }
   | '(' Expression ')'                             { $$ = $2; }
   | BasicExpression BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   ;
 
 DeclExpression:
-    BasicDeclarator TypeName                { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $2); }
-  | BasicDeclarator TypeName '=' Expression { $$ = nalloc(2, EXPRDECL); $$->value.valC = $1; addChild($$, $2); addChild($$, $4); }
-  | BasicDeclarator '=' Expression          { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $3); }
+    ID ':' TypeName                { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $3); }
+  | ID ':' TypeName '=' Expression { $$ = nalloc(2, EXPRDECL); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' '=' Expression          { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $4); }
+  ;
+
+BasicValue:
+    QualifiedIDWithOperators { $$ = $1; }
+  | INTEGER                  { $$ = nalloc(0, VALINT); $$->value.valI = $1; }
+  | FLOAT                    { $$ = nalloc(0, VALFLOAT); $$->value.valF = $1; }
+  | CHAR                     { $$ = nalloc(0, VALINT); $$->value.valI = $1; }
+  | STRING                   { $$ = nalloc(0, VALSTR); $$->value.valC = $1; }
+  ;
 
 BinaryOperator:
     '+'   { $$ = "+"; }

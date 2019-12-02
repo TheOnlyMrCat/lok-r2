@@ -1,7 +1,7 @@
 CC ?= clang
 CFLAGS := -Isource -Ibuild
 DC ?= ldc2
-DFLAGS := -unittest -I=./source
+DFLAGS := -unittest -I=source -J=source
 LINKFLAGS :=
 FLEX ?= flex
 FLEXFLAGS :=

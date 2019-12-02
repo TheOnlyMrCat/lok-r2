@@ -3,12 +3,14 @@ module parsing;
 import app;
 import nodetypes;
 
+import std.conv;
 import std.string;
 import std.experimental.logger;
 
 import core.stdc.errno;
 import core.stdc.stdio;
 import core.stdc.string : strerror;
+import core.stdc.stdlib : free;
 
 struct CNode {
     int type;
@@ -39,12 +41,20 @@ struct TKVal {
     string valC;
 }
 
+struct YYLTYPE {
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
+}
+
 string currentFile;
 
 extern(C) {
     extern __gshared CNode* parseResult;
     extern __gshared int yylineno;
     extern __gshared int column;
+    extern __gshared YYLTYPE yylloc;
 
     int yyparse();
     int openFile(const char *filename);
@@ -52,7 +62,7 @@ extern(C) {
     void freeResult();
 
     void yyerror(const char *p) {
-        errorf("%s:%d:%d: %s", currentFile, yylineno, column, p.fromStringz);
+        errorf("%s:%d:%d: %s", currentFile, yylloc.first_line, yylloc.first_column, p.fromStringz);
     }
 
     void doLog(const char *p) {
@@ -82,9 +92,13 @@ void parse(string file) {
 ASTNode recursiveConvert(CNode* cn) {
     ASTNode astn;
     astn.type = cast(NodeType) cn.type;
-    astn.valI = cn.value.valI;
-    astn.valF = cn.value.valF;
-    astn.valC = cn.value.valC.fromStringz.idup;
+
+    if (astn.isStringType) astn.valI = cn.value.valI;
+    else if (astn.isFloatType) astn.valF = cn.value.valF;
+    else if (astn.isStringType) {
+        astn.valC = cn.value.valC.fromStringz.idup;
+        free(cn.value.valC);
+    }
 
     astn.children.length = cn.cCount;
     for (int i = 0; i < cn.cCount; i++) {
@@ -99,7 +113,8 @@ bool isStringType(ASTNode node) {
     case NodeType.PARAM:
     case NodeType.LIBNAME:
     case NodeType.FILEPATH:
-    case NodeType.TYPESINGLE:
+    case NodeType.VALSTR:
+    case NodeType.QUALPART:
         return true;
     default: return false;
     }
@@ -108,11 +123,27 @@ bool isStringType(ASTNode node) {
 bool isIntType(ASTNode node) {
     switch (node.type) {
     case NodeType.RUN:
+    case NodeType.VALINT:
         return true;
     default: return false;
     }
 }
 
 bool isFloatType(ASTNode node) {
-    return false;
+    switch (node.type) {
+    case NodeType.VALFLOAT:
+        return true;
+    default: return false;
+    }
+}
+
+string mapEnum(int i) {
+    // This is a really hacky way using file imports
+    string imported = import("nodetypes.d");
+    string[] types = imported[(imported.indexOf('{') + 1)..importedk.indexOf('}')].split(',');
+    if (i >= types.length) {
+        return i.to!string;
+    } else {
+        return types[i].strip;
+    }
 }

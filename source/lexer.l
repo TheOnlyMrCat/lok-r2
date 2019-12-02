@@ -3,57 +3,67 @@
 #include "grammar.h"
 
 int backslashSequence(char);
+
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
+    yylloc.first_column = column; yylloc.last_column = column + yyleng - 1; \
+    column += yyleng;
 %}
 
 %option noyywrap
 %option yylineno
 %%
 
-run/[^A-Za-z0-9_]  { column += 3; return RUNK; }
-load/[^A-Za-z0-9_] { column += 4; return LOADK; }
+run/[^A-Za-z0-9_]  { return RUNK; }
+load/[^A-Za-z0-9_] { return LOADK; }
 
-[A-Za-z_][A-Za-z0-9_]* { yylval.valC = strdup(yytext); column += strlen(yytext); return ID; }
+[A-Za-z_][A-Za-z0-9_]* { yylval.valC = strdup(yytext); return ID; }
 
-[+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { yylval.valF = strtod(yytext, NULL); column += strlen(yytext); return FLOAT; } // Decimal floating point with decimal point
-[+-]?0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { yylval.valF = strtod(yytext, NULL); column += strlen(yytext); return FLOAT; } // Hex floating point with decimal point
-[+-]?[0-9]+[eE][+-]?[:digit]+f?                                { yylval.valF = strtod(yytext, NULL); column += strlen(yytext); return FLOAT; } // Decimal floating point with exponent
-[+-]?0[xX][0-9A-Fa-f]+[pP][+-]?[0-9A-Fa-f]+f?                  { yylval.valF = strtod(yytext, NULL); column += strlen(yytext); return FLOAT; } // Hex floating point with exponent
-[+-]?[0-9]+f                                                   { yylval.valF = strtod(yytext, NULL); column += strlen(yytext); return FLOAT; } // Decimal floating point integer
-[+-]?0[xX][0-9]+f                                              { yylval.valF = strtod(yytext, NULL); column += strlen(yytext); return FLOAT; } // Hex floating point integer
+[+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with decimal point
+[+-]?0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with decimal point
+[+-]?[0-9]+[eE][+-]?[:digit]+f?                                { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with exponent
+[+-]?0[xX][0-9A-Fa-f]+[pP][+-]?[0-9A-Fa-f]+f?                  { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with exponent
+[+-]?[0-9]+f                                                   { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point integer
+[+-]?0[xX][0-9]+f                                              { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point integer
 
-[+-]?[0-9]+            { yylval.valI = strtol(yytext, NULL, 10); column += strlen(yytext); return INTEGER; } // Decimal integer literal
-[+-]?0[xX][0-9A-Fa-f]+ { yylval.valI = strtol(yytext, NULL, 16); column += strlen(yytext); return INTEGER; } // Hex integer literal
+[+-]?[0-9]+            { yylval.valI = strtol(yytext, NULL, 10); return INTEGER; } // Decimal integer literal
+[+-]?0[xX][0-9A-Fa-f]+ { yylval.valI = strtol(yytext, NULL, 16); return INTEGER; } // Hex integer literal
 
-\'\\x[0-9A-Fa-f]*\'   { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); column += strlen(yytext); return CHAR; }
-\'\\u[0-9A-Fa-f]{4}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); column += 8; return CHAR; }
-\'\\U[0-9A-Fa-f]{8}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); column += 12; return CHAR; }
-\'\\.\'               { yylval.valI = backslashSequence(yytext[2]); column += 4; return CHAR; }
-\'.\'                 { yylval.valI = (long) yytext[1]; column += 3; return CHAR; }
+\'\\x[0-9A-Fa-f]*\'   { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\u[0-9A-Fa-f]{4}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\U[0-9A-Fa-f]{8}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\.\'               { yylval.valI = backslashSequence(yytext[2]); return CHAR; }
+\'.\'                 { yylval.valI = (long) yytext[1]; return CHAR; }
 
-\"[^\"\n]\" { yylval.valC = strdup(yytext); column += strlen(yytext); return STRING; }
+\"[^\"\n]*\" {
+    int len = strlen(yytext);
+    yylval.valC = malloc(sizeof(char) * (len - 1));
+    memcpy(yylval.valC, yytext + 1, len - 2);
+    yylval.valC[len - 2] = '\0';
+    return STRING;
+}
 
-"::" { column += 2; return DBLCOLON; }
-"->" { column += 2; return RSARROW; }
-"#=" { column += 2; return CONSTEQ; }
-"||" { column += 2; return DBLBAR; }
-"&&" { column += 2; return DBLAND; }
-"^^" { column += 2; return DBLXOR; }
-"<<" { column += 2; return DBLLEFT; }
-">>" { column += 2; return DBLRIGHT; }
-"++" { column += 2; return DBLPLUS; }
-"--" { column += 2; return DBLMINUS; }
-"!!" { column += 2; return DBLNOT; }
-"==" { column += 2; return DBLEQ; }
-"!=" { column += 2; return NOTEQ; }
-">=" { column += 2; return GTEQ; }
-"<=" { column += 2; return LTEQ; }
+"::" { return DBLCOLON; }
+"->" { return RSARROW; }
+"#=" { return CONSTEQ; }
+"||" { return DBLBAR; }
+"&&" { return DBLAND; }
+"^^" { return DBLXOR; }
+"<<" { return DBLLEFT; }
+">>" { return DBLRIGHT; }
+"++" { return DBLPLUS; }
+"--" { return DBLMINUS; }
+"!!" { return DBLNOT; }
+"==" { return DBLEQ; }
+"!=" { return NOTEQ; }
+">=" { return GTEQ; }
+"<=" { return LTEQ; }
 
-">>>" { column += 3; return TPLRIGHT; }
+">>>" { return TPLRIGHT; }
 
 <<EOF>>    { return 0; }
-[ \t]+     { column += strlen(yytext); }
+[ \t]+     // Whitespace need not be
 \n         { column = 1; }
-.          { column++; return yytext[0]; }
+.          { return yytext[0]; }
 
 %%
 

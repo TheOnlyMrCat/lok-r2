@@ -74,7 +74,7 @@ void printAST(ASTNode node, int depth) {
         write("-");
     }
 
-    writef("(%d)", node.type);
+    writef("(%s)", node.type.mapEnum);
 
     if (node.isStringType) {
         writeln(" \"", node.valC, "\"");

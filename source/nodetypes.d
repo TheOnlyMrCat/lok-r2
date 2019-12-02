@@ -18,7 +18,11 @@ enum NodeType {
     FILEPATH,
     QUALID,
     QUALIDOP,
+    QUALPART,
     EXPRASSIG,
     EXPRBASIC,
     EXPRDECL,
+    VALINT,
+    VALFLOAT,
+    VALSTR
 }
