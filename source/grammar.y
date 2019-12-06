@@ -58,14 +58,14 @@ extern Node *nalloc(int children, int type);
 
 %token DBLCOLON "::" DBLBAR "||" DBLAND "&&" DBLXOR "^^" DBLLEFT "<<" DBLRIGHT ">>" TPLRIGHT ">>>" DBLPLUS "++" DBLMINUS "--" DBLNOT "!!"
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
-%token RSARROW "->" CONSTEQ "#=" RUNK "run" LOADK "load"
+%token RSARROW "->" RDARROW "=>" RRDARROW ">=>" CONSTEQ "#=" RUNK "run" LOADK "load"
 
 %type <valC> LibraryName FilePath BinaryOperator PrefixOperator PostfixOperator
 %type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
-%type <valN> FuncDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
+%type <valN> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
 %type <valN> BlockStatement Statements Statement
-%type <valN> Expression AssignExpression BasicExpression DeclExpression
+%type <valN> Expression AssignExpression BasicExpression
 %type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue
 
 %left "||"
@@ -131,7 +131,6 @@ FileLocator:
 FilePath:
     ID
   | ID '/' FilePath { $$ = realloc($1, sizeof(char) * (strlen($1) + 1 + strlen($3))); strcat($$, "/"); strcat($$, $3); }
-  | ID '.' FilePath { $$ = realloc($1, sizeof(char) * (strlen($1) + 1 + strlen($3))); strcat($$, "."); strcat($$, $3); }
   ;
 
 LibraryName:
@@ -139,24 +138,26 @@ LibraryName:
   ;
 
 NamespaceItem:
-    FuncDeclaration
+    BasicDeclaration
   | RunDeclaration
   ;
 
-FuncDeclaration:
-    ID ':' FunctionType CONSTEQ FuncDefinition { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' FunctionType '=' FuncDefinition     { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' FunctionType ';'                    { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $3); }
+BasicDeclaration:
+    ID ':' Type '=' Expression ';' { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' '=' Expression ';'      { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $4); }
+  | ID ':' Type ';'                { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 RunDeclaration:
-    "run" CONSTEQ FuncDefinition[func]         { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = 0; }
-  | "run" INTEGER CONSTEQ FuncDefinition[func] { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = $2; }
+    "run" FuncDefinition[func]         { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = 0; }
+  | "run" INTEGER FuncDefinition[func] { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = $2; }
   ;
 
 FuncDefinition:
-    Parameters FunctionBody { $$ = nalloc(2, FUNCDEF); addChild($$, $2); addChild($$, $1); }
-  | FunctionBody            { $$ = nalloc(1, FUNCDEF); addChild($$, $1); }
+    Parameters "->" Type "=>" Expression    { $$ = nalloc(3, FUNCDEF); addChild($$, $5); addChild($$, $1); addChild($$, $3); }
+  | Parameters "=>" Expression              { $$ = nalloc(2, FUNCDEF); addChild($$, $3); addChild($$, $1); }
+  | Parameters "->" Type ">=>" FunctionBody { $$ = nalloc(3, FUNCDEF); addChild($$, $5); addChild($$, $1); addChild($$, $3); }
+  | Parameters ">=>" FunctionBody           { $$ = nalloc(2, FUNCDEF); addChild($$, $3); addChild($$, $1); }
   ;
 
 FunctionBody:
@@ -164,7 +165,8 @@ FunctionBody:
   ;
 
 Parameters:
-    '(' ParameterList ')' { $$ = $2; }
+    '(' ')'               { $$ = nalloc(0, PARAMLIST); }
+  | '(' ParameterList ')' { $$ = $2; }
   ;
 
 ParameterList:
@@ -216,6 +218,8 @@ Statements:
 
 Statement:
     Expression ';'
+  | BasicDeclaration
+  | BlockStatement
   ;
 
 QualifiedID:
@@ -237,7 +241,6 @@ QualifiedIDWithOperators:
 Expression:
     AssignExpression
   | BasicExpression
-  | DeclExpression
   ;
 
 AssignExpression:
@@ -246,19 +249,15 @@ AssignExpression:
   ;
 
 BasicExpression:
-    BasicValue                                     { $$ = $1; }
-  | '(' Expression ')'                             { $$ = $2; }
-  | BasicExpression BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
-  ;
-
-DeclExpression:
-    ID ':' TypeName                { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $3); }
-  | ID ':' TypeName '=' Expression { $$ = nalloc(2, EXPRDECL); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' '=' Expression          { $$ = nalloc(1, EXPRDECL); $$->value.valC = $1; addChild($$, $4); }
+    BasicValue                                        { $$ = $1; }
+  | BasicValue BinaryOperator BasicExpression         { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+  | '(' Expression ')'                                { $$ = $2; }
+  | '(' Expression ')' BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $2); $$->value.valC = $4; addChild($$, $5); }
   ;
 
 BasicValue:
     QualifiedIDWithOperators { $$ = $1; }
+  | FuncDefinition           { $$ = $1; }
   | INTEGER                  { $$ = nalloc(0, VALINT); $$->value.valI = $1; }
   | FLOAT                    { $$ = nalloc(0, VALFLOAT); $$->value.valF = $1; }
   | CHAR                     { $$ = nalloc(0, VALINT); $$->value.valI = $1; }

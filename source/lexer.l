@@ -57,8 +57,10 @@ load/[^A-Za-z0-9_] { return LOADK; }
 "!=" { return NOTEQ; }
 ">=" { return GTEQ; }
 "<=" { return LTEQ; }
+"=>" { return RDARROW; }
 
 ">>>" { return TPLRIGHT; }
+">=>" { return RRDARROW; }
 
 <<EOF>>    { return 0; }
 [ \t]+     // Whitespace need not be

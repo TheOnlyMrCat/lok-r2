@@ -140,7 +140,7 @@ bool isFloatType(ASTNode node) {
 string mapEnum(int i) {
     // This is a really hacky way using file imports
     string imported = import("nodetypes.d");
-    string[] types = imported[(imported.indexOf('{') + 1)..importedk.indexOf('}')].split(',');
+    string[] types = imported[(imported.indexOf('{') + 1)..imported.indexOf('}')].split(',');
     if (i >= types.length) {
         return i.to!string;
     } else {
