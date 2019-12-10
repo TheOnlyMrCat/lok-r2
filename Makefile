@@ -42,4 +42,5 @@ clean:
 debug: CFLAGS += -g
 debug: DFLAGS += -gc
 debug: FLEXFLAGS += -d
+debug: BISONFLAGS += --report=state
 debug: all

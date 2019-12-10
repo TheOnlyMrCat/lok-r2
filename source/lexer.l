@@ -44,7 +44,6 @@ load/[^A-Za-z0-9_] { return LOADK; }
 
 "::" { return DBLCOLON; }
 "->" { return RSARROW; }
-"#=" { return CONSTEQ; }
 "||" { return DBLBAR; }
 "&&" { return DBLAND; }
 "^^" { return DBLXOR; }
@@ -58,6 +57,18 @@ load/[^A-Za-z0-9_] { return LOADK; }
 ">=" { return GTEQ; }
 "<=" { return LTEQ; }
 "=>" { return RDARROW; }
+
+"+=" { return COMPADD; }
+"-=" { return COMPSUB; }
+"*=" { return COMPMUL; }
+"/=" { return COMPDIV; }
+"%=" { return COMPMOD; }
+"&=" { return COMPAND; }
+"|=" { return COMPIOR; }
+"^=" { return COMPXOR; }
+"<<=" { return COMPASL; }
+">>=" { return COMPASR; }
+">>>=" { return COMPUSR; }
 
 ">>>" { return TPLRIGHT; }
 ">=>" { return RRDARROW; }

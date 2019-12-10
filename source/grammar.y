@@ -31,9 +31,15 @@ extern int yyerror(const char *p);
 }
 
 %code provides {
+union ValueType {
+  long long valI;
+  double valF;
+  char *valC;
+};
+
 struct ASTNode {
   int type;
-  YYSTYPE value;
+  union ValueType value;
 
   int cCap; // The index of the next child that will require a reallocation to initialise
   int cCount; // The index of the child to be initialised next
@@ -49,6 +55,14 @@ int column;
 extern Node *nalloc(int children, int type);
 }
 
+%destructor {
+  free($$);
+} <valC>
+
+%destructor {
+  free($$->value.valC);
+} QualifiedIDPart BasicDeclaration Parameter BasicValueString BasicExpression AssignExpression
+
 %define parse.error verbose
 %define parse.lac full
 
@@ -58,15 +72,16 @@ extern Node *nalloc(int children, int type);
 
 %token DBLCOLON "::" DBLBAR "||" DBLAND "&&" DBLXOR "^^" DBLLEFT "<<" DBLRIGHT ">>" TPLRIGHT ">>>" DBLPLUS "++" DBLMINUS "--" DBLNOT "!!"
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
-%token RSARROW "->" RDARROW "=>" RRDARROW ">=>" CONSTEQ "#=" RUNK "run" LOADK "load"
+%token RSARROW "->" RDARROW "=>" RRDARROW ">=>" RUNK "run" LOADK "load"
+%token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 
-%type <valC> LibraryName FilePath BinaryOperator PrefixOperator PostfixOperator
+%type <valC> LibraryName FilePath BinaryOperator PrefixOperator PostfixOperator ArithmeticOperator LogicalOperator ComparisonOperator CompAssignOperator
 %type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
 %type <valN> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
 %type <valN> BlockStatement Statements Statement
 %type <valN> Expression AssignExpression BasicExpression
-%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue
+%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue BasicValueString
 
 %left "||"
 %left "^^"
@@ -120,12 +135,12 @@ top:
   ;
 
 LoadExpression:
-    "load" '(' FileLocator[file] ')' { $$ = nalloc(1, LOAD); addChild($$, $file); }
+    "load" '(' FileLocator ')' { $$ = nalloc(1, LOAD); addChild($$, $3); }
   ;
 
 FileLocator:
-    FilePath[file]                      { $$ = nalloc(1, NONE); addChild($$, nalloc(0, FILEPATH))->value.valC = $file; }
-  | LibraryName[lib] ':' FilePath[file] { $$ = nalloc(2, NONE); addChild($$, nalloc(0, LIBNAME))->value.valC = $lib; addChild($$, nalloc(0, FILEPATH))->value.valC = $file; }
+    FilePath                 { $$ = nalloc(1, NONE); addChild($$, nalloc(0, FILEPATH))->value.valC = $1; }
+  | LibraryName ':' FilePath { $$ = nalloc(2, NONE); addChild($$, nalloc(0, LIBNAME))->value.valC = $1; addChild($$, nalloc(0, FILEPATH))->value.valC = $3; }
   ;
 
 FilePath:
@@ -143,14 +158,14 @@ NamespaceItem:
   ;
 
 BasicDeclaration:
-    ID ':' Type '=' Expression ';' { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' '=' Expression ';'      { $$ = nalloc(2, FUNCDEC); $$->value.valC = $1; addChild($$, $4); }
-  | ID ':' Type ';'                { $$ = nalloc(1, FUNCDEC); $$->value.valC = $1; addChild($$, $3); }
+    ID ':' Type '=' Expression ';' { $$ = nalloc(2, DECL); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' '=' Expression ';'      { $$ = nalloc(2, DECL); $$->value.valC = $1; addChild($$, $4); }
+  | ID ':' Type ';'                { $$ = nalloc(1, DECL); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 RunDeclaration:
-    "run" FuncDefinition[func]         { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = 0; }
-  | "run" INTEGER FuncDefinition[func] { $$ = nalloc(1, RUN); addChild($$, $func); $$->value.valI = $2; }
+    "run" FuncDefinition         { $$ = nalloc(1, RUN); addChild($$, $2); $$->value.valI = -1; }
+  | "run" INTEGER FuncDefinition { $$ = nalloc(1, RUN); addChild($$, $3); $$->value.valI = $2; }
   ;
 
 FuncDefinition:
@@ -244,8 +259,8 @@ Expression:
   ;
 
 AssignExpression:
-    QualifiedID '=' Expression                { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); }
-  | QualifiedID BinaryOperator '=' Expression { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $4); $$->value.valC = $2; }
+    QualifiedID '=' Expression                { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); $$->value.valC = ""; }
+  | QualifiedID CompAssignOperator Expression { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
   ;
 
 BasicExpression:
@@ -258,13 +273,23 @@ BasicExpression:
 BasicValue:
     QualifiedIDWithOperators { $$ = $1; }
   | FuncDefinition           { $$ = $1; }
+  | BasicValueString         { $$ = $1; }
   | INTEGER                  { $$ = nalloc(0, VALINT); $$->value.valI = $1; }
   | FLOAT                    { $$ = nalloc(0, VALFLOAT); $$->value.valF = $1; }
   | CHAR                     { $$ = nalloc(0, VALINT); $$->value.valI = $1; }
-  | STRING                   { $$ = nalloc(0, VALSTR); $$->value.valC = $1; }
+  ;
+
+BasicValueString:
+    STRING { $$ = nalloc(0, VALSTR); $$->value.valC = $1; }
   ;
 
 BinaryOperator:
+    ArithmeticOperator
+  | LogicalOperator
+  | ComparisonOperator
+  ;
+
+ArithmeticOperator:
     '+'   { $$ = "+"; }
   | '-'   { $$ = "-"; }
   | '*'   { $$ = "*"; }
@@ -273,13 +298,19 @@ BinaryOperator:
   | '&'   { $$ = "&"; }
   | '|'   { $$ = "|"; }
   | '^'   { $$ = "^"; }
-  | "&&"  { $$ = "&&"; }
-  | "||"  { $$ = "||"; }
-  | "^^"  { $$ = "^^"; }
   | "<<"  { $$ = "<<"; }
   | ">>"  { $$ = ">>"; }
   | ">>>" { $$ = ">>>"; }
-  | "=="  { $$ = "=="; }
+  ;
+
+LogicalOperator:
+    "&&"  { $$ = "&&"; }
+  | "||"  { $$ = "||"; }
+  | "^^"  { $$ = "^^"; }
+  ;
+
+ComparisonOperator:
+    "=="  { $$ = "=="; }
   | "!="  { $$ = "!="; }
   | '<'   { $$ = "<"; }
   | '>'   { $$ = ">"; }
@@ -302,4 +333,18 @@ PrefixOperator:
 PostfixOperator:
     "++" { $$ = "++"; }
   | "--" { $$ = "--"; }
+  ;
+
+CompAssignOperator:
+    "+="   { $$ = "+"; }
+  | "-="   { $$ = "-"; }
+  | "*="   { $$ = "*"; }
+  | "/="   { $$ = "/"; }
+  | "%="   { $$ = "%"; }
+  | "&="   { $$ = "&"; }
+  | "|="   { $$ = "|"; }
+  | "^="   { $$ = "^"; }
+  | "<<="  { $$ = "<<"; }
+  | ">>="  { $$ = ">>"; }
+  | ">>>=" { $$ = ">>>"; }
   ;

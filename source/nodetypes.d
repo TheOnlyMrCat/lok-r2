@@ -13,7 +13,7 @@ enum NodeType {
     TYPEFN,
     PARAMLIST,
     PARAM,
-    FUNCDEC,
+    DECL,
     LIBNAME,
     FILEPATH,
     QUALID,

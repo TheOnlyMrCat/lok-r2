@@ -2,8 +2,6 @@
 #include <stdlib.h>
 
 #include "grammar.h"
-#include "nodetypes.d"
-; // Necessary semicolon to terminate enum declaration
 
 extern FILE *yyin;
 
@@ -13,12 +11,13 @@ int openFile(const char *filename) {
 }
 
 void allocResult() {
-    parseResult = nalloc(0, NONE);
+    parseResult = nalloc(0, 0);
 }
 
 void recursiveFree(Node *n) {
     for (int i = 0; i < n->cCount; i++) {
         recursiveFree(n->children[i]);
+        n->children[i] = NULL;
     }
     free(n);
 }

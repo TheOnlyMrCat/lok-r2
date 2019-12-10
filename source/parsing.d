@@ -93,12 +93,13 @@ ASTNode recursiveConvert(CNode* cn) {
     ASTNode astn;
     astn.type = cast(NodeType) cn.type;
 
-    if (astn.isStringType) astn.valI = cn.value.valI;
+    if (astn.isIntType) astn.valI = cn.value.valI;
     else if (astn.isFloatType) astn.valF = cn.value.valF;
     else if (astn.isStringType) {
         astn.valC = cn.value.valC.fromStringz.idup;
         free(cn.value.valC);
     }
+    cn.value.valI = 0;
 
     astn.children.length = cn.cCount;
     for (int i = 0; i < cn.cCount; i++) {
@@ -109,12 +110,14 @@ ASTNode recursiveConvert(CNode* cn) {
 
 bool isStringType(ASTNode node) {
     switch (node.type) {
-    case NodeType.FUNCDEC:
+    case NodeType.DECL:
     case NodeType.PARAM:
     case NodeType.LIBNAME:
     case NodeType.FILEPATH:
     case NodeType.VALSTR:
     case NodeType.QUALPART:
+    case NodeType.EXPRBASIC:
+    case NodeType.EXPRASSIG:
         return true;
     default: return false;
     }
