@@ -12,7 +12,6 @@ extern int yyerror(const char *p);
 %union {
   long long valI;
   double valF;
-  char *valC;
   struct ASTNode *valN;
 }
 
@@ -34,7 +33,6 @@ extern int yyerror(const char *p);
 union ValueType {
   long long valI;
   double valF;
-  char *valC;
 };
 
 struct ASTNode {
@@ -53,20 +51,13 @@ Node *parseResult;
 int column;
 
 extern Node *nalloc(int children, int type);
+extern int getString(char *);
 }
-
-%destructor {
-  free($$);
-} <valC>
-
-%destructor {
-  free($$->value.valC);
-} QualifiedIDPart BasicDeclaration Parameter BasicValueString BasicExpression AssignExpression
 
 %define parse.error verbose
 %define parse.lac full
 
-%token <valC> ID STRING
+%token <valI> ID STRING
 %token <valF> FLOAT
 %token <valI> INTEGER CHAR
 
@@ -75,8 +66,8 @@ extern Node *nalloc(int children, int type);
 %token RSARROW "->" RDARROW "=>" RRDARROW ">=>" RUNK "run" LOADK "load"
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 
-%type <valC> LibraryName FilePath BinaryOperator PrefixOperator PostfixOperator ArithmeticOperator LogicalOperator ComparisonOperator CompAssignOperator
-%type <valN> LoadExpression FileLocator NamespaceItem RunDeclaration
+%type <valI> LibraryName BinaryOperator PrefixOperator PostfixOperator ArithmeticOperator LogicalOperator ComparisonOperator CompAssignOperator
+%type <valN> LoadExpression FileLocator FilePath NamespaceItem RunDeclaration
 %type <valN> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
 %type <valN> BlockStatement Statements Statement
@@ -104,11 +95,11 @@ extern void doLog(const char*);
 
 Node *nalloc(int children, int type) {
   Node *n = (Node*) malloc(sizeof(Node));
+  memset(n, 0, sizeof(Node));
   n->type = type;
-  n->value.valI = 0;
   if (children > 0) n->children = (Node**) malloc(sizeof(Node) * children);
+  else n->children = NULL;
   n->cCap = children;
-  n->cCount = 0;
   return n;
 }
 
@@ -139,13 +130,13 @@ LoadExpression:
   ;
 
 FileLocator:
-    FilePath                 { $$ = nalloc(1, NONE); addChild($$, nalloc(0, FILEPATH))->value.valC = $1; }
-  | LibraryName ':' FilePath { $$ = nalloc(2, NONE); addChild($$, nalloc(0, LIBNAME))->value.valC = $1; addChild($$, nalloc(0, FILEPATH))->value.valC = $3; }
+    FilePath                 { $$ = nalloc(1, NONE); addChild($$, $1); }
+  | LibraryName ':' FilePath { $$ = nalloc(2, NONE); addChild($$, nalloc(0, LIBNAME))->value.valI = $1; addChild($$, $3); }
   ;
 
 FilePath:
-    ID
-  | ID '/' FilePath { $$ = realloc($1, sizeof(char) * (strlen($1) + 1 + strlen($3))); strcat($$, "/"); strcat($$, $3); }
+    ID              { $$ = nalloc(0, FILEPATH); $$->value.valI = $1; }
+  | ID '/' FilePath { $$ = nalloc(1, FILEPATH); addChild($$, $3); $$->value.valI = $1; }
   ;
 
 LibraryName:
@@ -158,9 +149,9 @@ NamespaceItem:
   ;
 
 BasicDeclaration:
-    ID ':' Type '=' Expression ';' { $$ = nalloc(2, DECL); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' '=' Expression ';'      { $$ = nalloc(2, DECL); $$->value.valC = $1; addChild($$, $4); }
-  | ID ':' Type ';'                { $$ = nalloc(1, DECL); $$->value.valC = $1; addChild($$, $3); }
+    ID ':' Type '=' Expression ';' { $$ = nalloc(2, DECL); $$->value.valI = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' '=' Expression ';'      { $$ = nalloc(2, DECL); $$->value.valI = $1; addChild($$, $4); }
+  | ID ':' Type ';'                { $$ = nalloc(1, DECL); $$->value.valI = $1; addChild($$, $3); }
   ;
 
 RunDeclaration:
@@ -190,8 +181,8 @@ ParameterList:
   ;
 
 Parameter:
-    ID          { $$ = nalloc(0, PARAM); $$->value.valC = $1; }
-  | ID ':' Type { $$ = nalloc(1, PARAM); $$->value.valC = $1; addChild($$, $3); }
+    ID          { $$ = nalloc(0, PARAM); $$->value.valI = $1; }
+  | ID ':' Type { $$ = nalloc(1, PARAM); $$->value.valI = $1; addChild($$, $3); }
   ;
 
 TypeName:
@@ -239,18 +230,18 @@ Statement:
 
 QualifiedID:
     QualifiedIDPart                 { $$ = nalloc(1, QUALID); addChild($$, $1); }
-  | LibraryName ':' QualifiedIDPart { $$ = nalloc(2, QUALID); addChild($$, nalloc(0, LIBNAME))->value.valC = $1; addChild($$, $3); }
+  | LibraryName ':' QualifiedIDPart { $$ = nalloc(2, QUALID); addChild($$, nalloc(0, LIBNAME))->value.valI = $1; addChild($$, $3); }
   ;
 
 QualifiedIDPart:
-    ID                     { $$ = nalloc(0, QUALPART); $$->value.valC = $1; }
-  | ID '.' QualifiedIDPart { $$ = nalloc(0, QUALPART); $$->value.valC = $1; addChild($$, $3); }
+    ID                     { $$ = nalloc(0, QUALPART); $$->value.valI = $1; }
+  | ID '.' QualifiedIDPart { $$ = nalloc(0, QUALPART); $$->value.valI = $1; addChild($$, $3); }
   ;
 
 QualifiedIDWithOperators:
     QualifiedID                              { $$ = nalloc(1, QUALIDOP); addChild($$, $1); }
-  | PrefixOperator QualifiedIDWithOperators  { $$ = nalloc(2, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valC = $1; addChild($$, $2); }
-  | QualifiedIDWithOperators PostfixOperator { $$ = nalloc(2, QUALIDOP); addChild($$, $1); addChild($$, nalloc(0, NONE))->value.valC = $2; }
+  | PrefixOperator QualifiedIDWithOperators  { $$ = nalloc(2, QUALIDOP); addChild($$, nalloc(0, NONE))->value.valI = $1; addChild($$, $2); }
+  | QualifiedIDWithOperators PostfixOperator { $$ = nalloc(2, QUALIDOP); addChild($$, $1); addChild($$, nalloc(0, NONE))->value.valI = $2; }
   ;
 
 Expression:
@@ -259,15 +250,15 @@ Expression:
   ;
 
 AssignExpression:
-    QualifiedID '=' Expression                { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); $$->value.valC = ""; }
-  | QualifiedID CompAssignOperator Expression { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
+    QualifiedID '=' Expression                { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); $$->value.valI = getString(""); }
+  | QualifiedID CompAssignOperator Expression { $$ = nalloc(2, EXPRASSIG); addChild($$, $1); addChild($$, $3); $$->value.valI = $2; }
   ;
 
 BasicExpression:
     BasicValue                                        { $$ = $1; }
-  | BasicValue BinaryOperator BasicExpression         { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+  | BasicValue BinaryOperator BasicExpression         { $$ = nalloc(2, EXPRBASIC); addChild($$, $1); $$->value.valI = $2; addChild($$, $3); }
   | '(' Expression ')'                                { $$ = $2; }
-  | '(' Expression ')' BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $2); $$->value.valC = $4; addChild($$, $5); }
+  | '(' Expression ')' BinaryOperator BasicExpression { $$ = nalloc(2, EXPRBASIC); addChild($$, $2); $$->value.valI = $4; addChild($$, $5); }
   ;
 
 BasicValue:
@@ -280,7 +271,7 @@ BasicValue:
   ;
 
 BasicValueString:
-    STRING { $$ = nalloc(0, VALSTR); $$->value.valC = $1; }
+    STRING { $$ = nalloc(0, VALSTR); $$->value.valI = $1; }
   ;
 
 BinaryOperator:
@@ -290,61 +281,61 @@ BinaryOperator:
   ;
 
 ArithmeticOperator:
-    '+'   { $$ = "+"; }
-  | '-'   { $$ = "-"; }
-  | '*'   { $$ = "*"; }
-  | '/'   { $$ = "/"; }
-  | '%'   { $$ = "%"; }
-  | '&'   { $$ = "&"; }
-  | '|'   { $$ = "|"; }
-  | '^'   { $$ = "^"; }
-  | "<<"  { $$ = "<<"; }
-  | ">>"  { $$ = ">>"; }
-  | ">>>" { $$ = ">>>"; }
+    '+'   { $$ = getString("+"); }
+  | '*'   { $$ = getString("*"); }
+  | '-'   { $$ = getString("-"); }
+  | '/'   { $$ = getString("/"); }
+  | '%'   { $$ = getString("%"); }
+  | '&'   { $$ = getString("&"); }
+  | '|'   { $$ = getString("|"); }
+  | '^'   { $$ = getString("^"); }
+  | "<<"  { $$ = getString("<<"); }
+  | ">>"  { $$ = getString(">>"); }
+  | ">>>" { $$ = getString(">>>"); }
   ;
 
 LogicalOperator:
-    "&&"  { $$ = "&&"; }
-  | "||"  { $$ = "||"; }
-  | "^^"  { $$ = "^^"; }
+    "&&"  { $$ = getString("&&"); }
+  | "||"  { $$ = getString("||"); }
+  | "^^"  { $$ = getString("^^"); }
   ;
 
 ComparisonOperator:
-    "=="  { $$ = "=="; }
-  | "!="  { $$ = "!="; }
-  | '<'   { $$ = "<"; }
-  | '>'   { $$ = ">"; }
-  | "<="  { $$ = "<="; }
-  | ">="  { $$ = ">="; }
-  | "<=>" { $$ = "<=>"; }
+    "=="  { $$ = getString("=="); }
+  | "!="  { $$ = getString("!="); }
+  | '<'   { $$ = getString("<"); }
+  | '>'   { $$ = getString(">"); }
+  | "<="  { $$ = getString("<="); }
+  | ">="  { $$ = getString(">="); }
+  | "<=>" { $$ = getString("<=>"); }
   ;
 
 PrefixOperator:
-    '+'  { $$ = "+"; }
-  | '-'  { $$ = "-"; }
-  | '*'  { $$ = "*"; }
-  | '&'  { $$ = "&"; }
-  | "++" { $$ = "++"; }
-  | "--" { $$ = "--"; }
-  | '!'  { $$ = "!"; }
-  | "!!" { $$ = "!!"; }
+    '+'  { $$ = getString("+"); }
+  | '-'  { $$ = getString("-"); }
+  | '*'  { $$ = getString("*"); }
+  | '&'  { $$ = getString("&"); }
+  | "++" { $$ = getString("++"); }
+  | "--" { $$ = getString("--"); }
+  | '!'  { $$ = getString("!"); }
+  | "!!" { $$ = getString("!!"); }
   ;
 
 PostfixOperator:
-    "++" { $$ = "++"; }
-  | "--" { $$ = "--"; }
+    "++" { $$ = getString("++"); }
+  | "--" { $$ = getString("--"); }
   ;
 
 CompAssignOperator:
-    "+="   { $$ = "+"; }
-  | "-="   { $$ = "-"; }
-  | "*="   { $$ = "*"; }
-  | "/="   { $$ = "/"; }
-  | "%="   { $$ = "%"; }
-  | "&="   { $$ = "&"; }
-  | "|="   { $$ = "|"; }
-  | "^="   { $$ = "^"; }
-  | "<<="  { $$ = "<<"; }
-  | ">>="  { $$ = ">>"; }
-  | ">>>=" { $$ = ">>>"; }
+    "+="   { $$ = getString("+"); }
+  | "-="   { $$ = getString("-"); }
+  | "*="   { $$ = getString("*"); }
+  | "/="   { $$ = getString("/"); }
+  | "%="   { $$ = getString("%"); }
+  | "&="   { $$ = getString("&"); }
+  | "|="   { $$ = getString("|"); }
+  | "^="   { $$ = getString("^"); }
+  | "<<="  { $$ = getString("<<"); }
+  | ">>="  { $$ = getString(">>"); }
+  | ">>>=" { $$ = getString(">>>"); }
   ;

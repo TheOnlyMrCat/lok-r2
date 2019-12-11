@@ -7,15 +7,27 @@ import std.stdio;
 import std.string;
 import std.experimental.logger;
 
+debug extern(C) extern __gshared int yy_flex_debug, yydebug;
+
 void main(string[] args) {
     bool verbose;
     bool vverbose;
+    bool flexDebug;
+    bool bisonDebug;
 
     GetoptResult opts = getopt(args,
     "v|verbose", "Print information messages to standard out.", &verbose,
-    "loquacious", "Print debug messages to standard out. Intended for developers of the langauge.", &vverbose);
+    "loquacious", "Print debug messages to standard out. Intended for developers of the langauge.", &vverbose,
+    "garrulous", "Print scanner debug output.", &flexDebug,
+    "palaverous", "Print parser debug output as well.", &bisonDebug);
+
+    debug {
+        yy_flex_debug = flexDebug ? 1 : 0;
+        yydebug = bisonDebug ? 1 : 0;
+    }
 
     LogLevel loggerL;
+    vverbose = vverbose || flexDebug || bisonDebug;
     if (vverbose) {
         loggerL = LogLevel.all;
     } else if (verbose) {
@@ -67,6 +79,8 @@ void main(string[] args) {
             parse(filename);
         }
     }
+
+    cleanupStrings();
 }
 
 void printAST(ASTNode node, int depth) {

@@ -41,6 +41,11 @@ clean:
 
 debug: CFLAGS += -g
 debug: DFLAGS += -gc
+ifeq ($(DC),ldc2)
+	DFLAGS += -d-debug
+else
+	DFLAGS += -debug
+endif
 debug: FLEXFLAGS += -d
-debug: BISONFLAGS += --report=state
+debug: BISONFLAGS += --report=state --debug
 debug: all

@@ -16,7 +16,7 @@ int backslashSequence(char);
 run/[^A-Za-z0-9_]  { return RUNK; }
 load/[^A-Za-z0-9_] { return LOADK; }
 
-[A-Za-z_][A-Za-z0-9_]* { yylval.valC = strdup(yytext); return ID; }
+[A-Za-z_][A-Za-z0-9_]* { yylval.valI = getString(yytext); return ID; }
 
 [+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with decimal point
 [+-]?0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with decimal point
@@ -34,13 +34,7 @@ load/[^A-Za-z0-9_] { return LOADK; }
 \'\\.\'               { yylval.valI = backslashSequence(yytext[2]); return CHAR; }
 \'.\'                 { yylval.valI = (long) yytext[1]; return CHAR; }
 
-\"[^\"\n]*\" {
-    int len = strlen(yytext);
-    yylval.valC = malloc(sizeof(char) * (len - 1));
-    memcpy(yylval.valC, yytext + 1, len - 2);
-    yylval.valC[len - 2] = '\0';
-    return STRING;
-}
+\"[^\"\n]*\" { yylval.valI = getString(yytext); return STRING; }
 
 "::" { return DBLCOLON; }
 "->" { return RSARROW; }
@@ -104,4 +98,29 @@ int backslashSequence(char c) {
             return '\'';
     }
     return '\0';
+}
+
+char **strings;
+int stringCount = 0;
+int stringCap = 0;
+
+int getString(char *string) {
+    for (int i = 0; i < stringCount; i++) {
+        if (strcmp(string, strings[i]) == 0) {
+            return i;
+        }
+    }
+
+    if (stringCount >= stringCap) {
+        if (stringCap == 0) {
+            stringCap = 1;
+            strings = malloc(sizeof(char*));
+        } else {
+            stringCap *= 2;
+            strings = realloc(strings, stringCap);
+        }
+    }
+
+    strings[stringCount] = strdup(string);
+    return stringCount++; // Postincrement intentional here
 }

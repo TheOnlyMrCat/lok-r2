@@ -23,7 +23,6 @@ struct CNode {
     union ValType {
         long valI;
         double valF;
-        char *valC;
     }
 }
 
@@ -52,6 +51,8 @@ string currentFile;
 
 extern(C) {
     extern __gshared CNode* parseResult;
+    extern __gshared char** strings;
+    extern __gshared int stringCount;
     extern __gshared int yylineno;
     extern __gshared int column;
     extern __gshared YYLTYPE yylloc;
@@ -96,8 +97,7 @@ ASTNode recursiveConvert(CNode* cn) {
     if (astn.isIntType) astn.valI = cn.value.valI;
     else if (astn.isFloatType) astn.valF = cn.value.valF;
     else if (astn.isStringType) {
-        astn.valC = cn.value.valC.fromStringz.idup;
-        free(cn.value.valC);
+        astn.valC = strings[cn.value.valI].fromStringz.idup;
     }
     cn.value.valI = 0;
 
@@ -149,4 +149,12 @@ string mapEnum(int i) {
     } else {
         return types[i].strip;
     }
+}
+
+void cleanupStrings() {
+    for (int i = 0; i < stringCount; i++) {
+        tracef("Freeing string \"%s\"", strings[i].fromStringz.idup);
+        free(strings[i]);
+    }
+    free(strings);
 }
