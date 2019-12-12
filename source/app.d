@@ -17,12 +17,12 @@ void main(string[] args) {
 
     GetoptResult opts = getopt(args,
     "v|verbose", "Print information messages to standard out.", &verbose,
-    "loquacious", "Print debug messages to standard out. Intended for developers of the langauge.", &vverbose,
-    "garrulous", "Print scanner debug output.", &flexDebug,
-    "palaverous", "Print parser debug output as well.", &bisonDebug);
+    "loquacious", "Print debug messages to standard out.", &vverbose,
+    "garrulous", "Print scanner debug output. Indended for developers of the language. Requires debug version.", &flexDebug,
+    "palaverous", "Print parser debug output as well. Don't do this. Requires debug version.", &bisonDebug);
 
     debug {
-        yy_flex_debug = flexDebug ? 1 : 0;
+        yy_flex_debug = flexDebug || bisonDebug ? 1 : 0;
         yydebug = bisonDebug ? 1 : 0;
     }
 

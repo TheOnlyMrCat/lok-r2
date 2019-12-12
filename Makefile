@@ -8,6 +8,12 @@ FLEXFLAGS :=
 BISON ?= bison
 BISONFLAGS :=
 
+ifeq ($(DC),ldc2)
+	DDEBUGFLAG := -d-debug
+else
+	DDEBUGFLAG := -debug
+endif
+
 OBJECTS := build/lex.o build/grammar.o build/app.o build/parsing.o build/interface.o
 
 all: build $(OBJECTS)
@@ -40,12 +46,7 @@ clean:
 	rm build/*
 
 debug: CFLAGS += -g
-debug: DFLAGS += -gc
-ifeq ($(DC),ldc2)
-	DFLAGS += -d-debug
-else
-	DFLAGS += -debug
-endif
+debug: DFLAGS += -gc $(DDEBUGFLAG)
 debug: FLEXFLAGS += -d
 debug: BISONFLAGS += --report=state --debug
 debug: all
