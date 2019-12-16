@@ -95,11 +95,12 @@ extern void doLog(const char*);
 
 Node *nalloc(int children, int type) {
   Node *n = (Node*) malloc(sizeof(Node));
-  memset(n, 0, sizeof(Node));
+  memset(n, 0, sizeof(Node)); // Initialise all values in the node to 0
   n->type = type;
-  if (children > 0) n->children = (Node**) malloc(sizeof(Node) * children);
-  else n->children = NULL;
-  n->cCap = children;
+  if (children > 0) {
+    n->children = (Node**) malloc(sizeof(Node) * children);
+    n->cCap = children;
+  }
   return n;
 }
 
@@ -113,8 +114,7 @@ Node *addChild(Node *parent, Node *child) {
       parent->children = realloc(parent->children, parent->cCap);
     }
   }
-  parent->children[parent->cCount] = child;
-  return parent->children[parent->cCount++]; // ++ doesn't affect result
+  return parent->children[parent->cCount++] = child; // ++ doesn't affect result
 }
 }
 
@@ -230,12 +230,12 @@ Statement:
 
 QualifiedID:
     QualifiedIDPart                 { $$ = nalloc(1, QUALID); addChild($$, $1); }
-  | LibraryName ':' QualifiedIDPart { $$ = nalloc(2, QUALID); addChild($$, nalloc(0, LIBNAME))->value.valI = $1; addChild($$, $3); }
+  | LibraryName ':' QualifiedIDPart { $$ = nalloc(2, QUALID); addChild($$, $3); addChild($$, nalloc(0, LIBNAME))->value.valI = $1; }
   ;
 
 QualifiedIDPart:
     ID                     { $$ = nalloc(0, QUALPART); $$->value.valI = $1; }
-  | ID '.' QualifiedIDPart { $$ = nalloc(0, QUALPART); $$->value.valI = $1; addChild($$, $3); }
+  | ID '.' QualifiedIDPart { $$ = nalloc(1, QUALPART); $$->value.valI = $1; addChild($$, $3); }
   ;
 
 QualifiedIDWithOperators:
