@@ -3,6 +3,10 @@
 
 #include "grammar.h"
 
+#ifdef DMALLOC
+#include <dmalloc.h>
+#endif
+
 extern FILE *yyin;
 
 int openFile(const char *filename) {
