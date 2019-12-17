@@ -8,8 +8,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Initialize automake
-AM_INIT_AUTOMAKE([foreign])
-AC_CONFIG_FILES([Makefile])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
+AC_CONFIG_FILES([Makefile src/Makefile])
 
 # Checks for programs.
 AC_PROG_CXX

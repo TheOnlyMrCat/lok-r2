@@ -1,8 +1,11 @@
 %{
 #include <stdlib.h>
-#include "grammar.h"
+#include "clok.hpp"
+#include "grammar.hpp"
 
 int backslashSequence(char);
+
+int column;
 
 #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
     yylloc.first_column = column; yylloc.last_column = column + yyleng - 1; \
@@ -98,29 +101,4 @@ int backslashSequence(char c) {
             return '\'';
     }
     return '\0';
-}
-
-char **strings;
-int stringCount = 0;
-int stringCap = 0;
-
-int getString(char *string) {
-    for (int i = 0; i < stringCount; i++) {
-        if (strcmp(string, strings[i]) == 0) {
-            return i;
-        }
-    }
-
-    if (stringCount >= stringCap) {
-        if (stringCap == 0) {
-            stringCap = 1;
-            strings = malloc(sizeof(char*));
-        } else {
-            stringCap *= 2;
-            strings = realloc(strings, stringCap);
-        }
-    }
-
-    strings[stringCount] = strdup(string);
-    return stringCount++; // Postincrement intentional here
 }
