@@ -31,7 +31,7 @@ load/[^A-Za-z0-9_] { return LOADK; }
 [+-]?[0-9]+            { yylval.valI = strtol(yytext, NULL, 10); return INTEGER; } // Decimal integer literal
 [+-]?0[xX][0-9A-Fa-f]+ { yylval.valI = strtol(yytext, NULL, 16); return INTEGER; } // Hex integer literal
 
-\'\\x[0-9A-Fa-f]*\'   { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
+\'\\x[0-9A-Fa-f]{2}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
 \'\\u[0-9A-Fa-f]{4}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
 \'\\U[0-9A-Fa-f]{8}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
 \'\\.\'               { yylval.valI = backslashSequence(yytext[2]); return CHAR; }
