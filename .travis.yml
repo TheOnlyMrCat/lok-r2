@@ -1,10 +1,8 @@
-language: d
+language: cpp
 
-script: make CC=gcc
-
-d:
-- dmd
-- ldc
+compiler:
+- gcc
+- clang
 
 addons:
   apt:
