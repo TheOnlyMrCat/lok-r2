@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
 	cxxopts::Options optParser("clok", "Compiler for the Lok programming language");
 
 	optParser.add_options()
+		("ast-dump", "Dump the AST's of all lok input files and quit")
 		("v,verbose", "Enable information output")
 		("loquacious", "Enable debug output")
 		("garrulous", "Enable scanner debug output (debug builds only)")
@@ -74,11 +75,18 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	bool astDump = options.count("ast-dump");
+
 	PLOGI << "Parsing " << argc - 1 << " files";
 	for (int i = 1; i < argc; i++) {
-		PLOGI << "Parsing file " << filename;
 		filename = argv[i];
+		PLOGI << "Parsing file " << filename;
 		parse();
+		if (astDump) {
+			std::string astFile = filename.substr(0, filename.find_last_of('.')) += ".ast";
+			PLOGI << "Dumping AST to " << astFile;
+			dumpAST(astFile);
+		}
 	}
 }
 
