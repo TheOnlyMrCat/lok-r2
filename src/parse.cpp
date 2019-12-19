@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <sstream>
 
 std::unique_ptr<Node> parseResult;
 std::string filename;
