@@ -1,5 +1,7 @@
 language: cpp
 
+install: touch configure
+
 compiler:
 - gcc
 - clang

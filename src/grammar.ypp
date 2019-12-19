@@ -61,12 +61,12 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 
 %type <valC> LibraryName BinaryOperator PrefixOperator PostfixOperator ArithmeticOperator LogicalOperator ComparisonOperator CompAssignOperator
-%type <valN> LoadExpression FileLocator FilePath NamespaceItem RunDeclaration
+%type <valN> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration
 %type <valN> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <valN> Type SingleType TupleTypes TupleType FunctionType
 %type <valN> BlockStatement Statements Statement
-%type <valN> Expression AssignExpression BasicExpression
-%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue BasicValueString
+%type <valN> Expression AssignExpression BasicExpression Expressions
+%type <valN> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue BasicValueString FunctionCall
 
 %left "||"
 %left "^^"
@@ -94,11 +94,11 @@ struct Node {
 %%
 root:
     %empty
-  | root LoadExpression { parseResult->children.emplace_back($2); }
-  | root NamespaceItem  { parseResult->children.emplace_back($2); }
+  | root LoadStatement { parseResult->children.emplace_back($2); }
+  | root NamespaceItem { parseResult->children.emplace_back($2); }
   ;
 
-LoadExpression:
+LoadStatement:
     "load" '(' FileLocator ')' { $$ = new Node(1, NodeType::LOAD, @$); addChild($$, $3); }
   ;
 
@@ -217,6 +217,11 @@ QualifiedIDWithOperators:
   | QualifiedIDWithOperators PostfixOperator { $$ = new Node(2, NodeType::QUALIDOP, @$); addChild($$, $1); addChild($$, new Node(0, NodeType::NONE, @$))->value.valC = $2; }
   ;
 
+Expressions:
+    Expression                 { $$ = new Node(1, NodeType::EXPRMULTI, @$); addChild($$, $1); }
+  | Expressions ',' Expression { $$ = $1; addChild($$, $3); }
+  ;
+
 Expression:
     AssignExpression
   | BasicExpression
@@ -229,13 +234,17 @@ AssignExpression:
 
 BasicExpression:
     BasicValue                                        { $$ = $1; }
-  | BasicExpression BinaryOperator BasicExpression    { $$ = new Node(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   | '(' Expression ')'                                { $$ = $2; }
-  | '(' Expression ')' BinaryOperator BasicExpression { $$ = new Node(2, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = $4; addChild($$, $5); }
+  | BasicExpression BinaryOperator BasicExpression    { $$ = new Node(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+  ;
+
+FunctionCall:
+    QualifiedIDWithOperators '(' Expressions ')' { $$ = new Node(2, NodeType::FUNCCALL, @$); addChild($$, $1); addChild($$, $3); }
   ;
 
 BasicValue:
     QualifiedIDWithOperators { $$ = $1; }
+  | FunctionCall             { $$ = $1; }
   | FuncDefinition           { $$ = $1; }
   | BasicValueString         { $$ = $1; }
   | INTEGER                  { $$ = new Node(0, NodeType::VALINT, @$); $$->value.valI = $1; }

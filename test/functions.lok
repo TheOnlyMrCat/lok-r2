@@ -7,5 +7,6 @@ bar := (a: i32, b: i32) -> i32 >=> {
 };
 
 run (argc: i32, argv: string) >=> {
-
+    baz: i32;
+    foo(10, 20, i64.MAX - 50, baz = 19);
 }
