@@ -19,6 +19,18 @@ int parse() {
     return result;
 }
 
+#include "nodetypenames.h"
+
+std::vector<std::string> typesList;
+
+std::string mapNodeType(int type) {
+    if (typesList.size() == 0) {
+        std::istringstream is(std::string(reinterpret_cast<char*>(nodetypenames_txt), nodetypenames_txt_len), '\n');
+        typesList = std::vector<std::string>(std::istream_iterator<std::string>{is}, std::istream_iterator<std::string>());
+    }
+    return typesList[type].substr(0, typesList[type].length() - 1);
+}
+
 void recursivePrint(std::unique_ptr<Node>& node, std::ofstream& out, int depth) {
     if (depth > 1) {
         out << std::string(depth - 1, ' ');
@@ -28,7 +40,7 @@ void recursivePrint(std::unique_ptr<Node>& node, std::ofstream& out, int depth) 
         out << '-';
     }
 
-    out << '[' << node->type << "] <line:" << node->location.first_line << '-' << node->location.last_line << ", col:" << node->location.first_column << '-' << node->location.last_column << '>';
+    out << '[' << mapNodeType(node->type) << "] <line:" << node->location.first_line << '-' << node->location.last_line << ", col:" << node->location.first_column << '-' << node->location.last_column << '>';
     switch (node->type) {
         case DECL:
         case PARAM:

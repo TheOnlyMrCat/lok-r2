@@ -26,28 +26,7 @@ struct Node;
  */
 
 enum NodeType {
-	NONE,
-	LOAD,
-	RUN,
-	FUNCDEF,
-	BLOCK,
-	TYPESINGLE,
-	TYPEMULTI,
-	TYPEFN,
-	PARAMLIST,
-	PARAM,
-	DECL,
-	LIBNAME,
-	FILEPATH,
-	QUALID,
-	QUALIDOP,
-	QUALPART,
-	EXPRASSIG,
-	EXPRBASIC,
-	EXPRDECL,
-	VALINT,
-	VALFLOAT,
-	VALSTR
+#include "nodetypenames.txt"
 };
 
 union ValueType {
@@ -113,10 +92,10 @@ struct Node {
 }
 
 %%
-top:
+root:
     %empty
-  | top LoadExpression { parseResult->children.emplace_back($2); }
-  | top NamespaceItem  { parseResult->children.emplace_back($2); }
+  | root LoadExpression { parseResult->children.emplace_back($2); }
+  | root NamespaceItem  { parseResult->children.emplace_back($2); }
   ;
 
 LoadExpression:

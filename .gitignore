@@ -8,6 +8,7 @@ config.log
 Makefile
 
 grammar*.hpp
+nodetypenames.h
 grammar*.cpp
 lexer.cpp
 .dirstamp

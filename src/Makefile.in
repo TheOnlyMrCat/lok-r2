@@ -293,8 +293,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_YFLAGS = -d -Wno-yacc
-BUILT_SOURCES = grammar.hpp
-clok_SOURCES = main.cpp parse.cpp lexer.lpp grammar.ypp
+BUILT_SOURCES = grammar.hpp nodetypenames.h
+clok_SOURCES = main.cpp parse.cpp lexer.lpp grammar.ypp nodetypenames.txt
 clok_CPPFLAGS = -I../lib
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -696,6 +696,9 @@ uninstall-am: uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
 
+
+nodetypenames.h: nodetypenames.txt
+	xxd -i nodetypenames.txt > nodetypenames.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

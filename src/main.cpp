@@ -26,7 +26,7 @@ public:
 				ss << "\x1b[35m";
 				break;
 			case plog::Severity::fatal:
-				ss << "\x1b[4m";
+				ss << "\x1b[1m";
 			case plog::Severity::error:
 				ss << "\x1b[31m";
 				break;
@@ -88,6 +88,8 @@ int main(int argc, char *argv[]) {
 			dumpAST(astFile);
 		}
 	}
+
+	if (astDump) return 0;
 }
 
 std::vector<std::string> strings;
