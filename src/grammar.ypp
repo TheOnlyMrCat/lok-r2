@@ -25,7 +25,7 @@ struct Node;
  * When released, the order will be normalised.
  */
 
-enum NodeType {
+enum class NodeType {
 #include "nodetypenames.txt"
 };
 
@@ -36,11 +36,11 @@ union ValueType {
 };
 
 struct Node {
-	Node(int type, int initialChildren, YYLTYPE loc) : type(type), location(loc) {
+	Node(int initialChildren, NodeType type, YYLTYPE loc) : type(type), location(loc) {
     children.reserve(initialChildren);
   }
 
-	int type;
+	NodeType type;
 	union ValueType value;
   YYLTYPE location;
 
@@ -99,17 +99,17 @@ root:
   ;
 
 LoadExpression:
-    "load" '(' FileLocator ')' { $$ = new Node(1, LOAD, @$); addChild($$, $3); }
+    "load" '(' FileLocator ')' { $$ = new Node(1, NodeType::LOAD, @$); addChild($$, $3); }
   ;
 
 FileLocator:
-    FilePath                 { $$ = new Node(1, NONE, @$); addChild($$, $1); }
-  | LibraryName ':' FilePath { $$ = new Node(2, NONE, @$); addChild($$, new Node(0, LIBNAME, @$))->value.valC = $1; addChild($$, $3); }
+    FilePath                 { $$ = new Node(1, NodeType::NONE, @$); addChild($$, $1); }
+  | LibraryName ':' FilePath { $$ = new Node(2, NodeType::NONE, @$); addChild($$, new Node(0, NodeType::LIBNAME, @$))->value.valC = $1; addChild($$, $3); }
   ;
 
 FilePath:
-    ID              { $$ = new Node(0, FILEPATH, @$); $$->value.valC = $1; }
-  | ID '/' FilePath { $$ = new Node(1, FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
+    ID              { $$ = new Node(0, NodeType::FILEPATH, @$); $$->value.valC = $1; }
+  | ID '/' FilePath { $$ = new Node(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
   ;
 
 LibraryName:
@@ -122,21 +122,21 @@ NamespaceItem:
   ;
 
 BasicDeclaration:
-    ID ':' Type '=' Expression ';' { $$ = new Node(2, DECL, @$); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' '=' Expression ';'      { $$ = new Node(2, DECL, @$); $$->value.valC = $1; addChild($$, $4); }
-  | ID ':' Type ';'                { $$ = new Node(1, DECL, @$); $$->value.valC = $1; addChild($$, $3); }
+    ID ':' Type '=' Expression ';' { $$ = new Node(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
+  | ID ':' '=' Expression ';'      { $$ = new Node(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $4); }
+  | ID ':' Type ';'                { $$ = new Node(1, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 RunDeclaration:
-    "run" FuncDefinition         { $$ = new Node(1, RUN, @$); addChild($$, $2); $$->value.valI = -1; }
-  | "run" INTEGER FuncDefinition { $$ = new Node(1, RUN, @$); addChild($$, $3); $$->value.valI = $2; }
+    "run" FuncDefinition         { $$ = new Node(1, NodeType::RUN, @$); addChild($$, $2); $$->value.valI = -1; }
+  | "run" INTEGER FuncDefinition { $$ = new Node(1, NodeType::RUN, @$); addChild($$, $3); $$->value.valI = $2; }
   ;
 
 FuncDefinition:
-    Parameters "->" Type "=>" Expression    { $$ = new Node(3, FUNCDEF, @$); addChild($$, $5); addChild($$, $1); addChild($$, $3); }
-  | Parameters "=>" Expression              { $$ = new Node(2, FUNCDEF, @$); addChild($$, $3); addChild($$, $1); }
-  | Parameters "->" Type ">=>" FunctionBody { $$ = new Node(3, FUNCDEF, @$); addChild($$, $5); addChild($$, $1); addChild($$, $3); }
-  | Parameters ">=>" FunctionBody           { $$ = new Node(2, FUNCDEF, @$); addChild($$, $3); addChild($$, $1); }
+    Parameters "->" Type "=>" Expression    { $$ = new Node(3, NodeType::FUNCDEF, @$); addChild($$, $5); addChild($$, $1); addChild($$, $3); }
+  | Parameters "=>" Expression              { $$ = new Node(2, NodeType::FUNCDEF, @$); addChild($$, $3); addChild($$, $1); }
+  | Parameters "->" Type ">=>" FunctionBody { $$ = new Node(3, NodeType::FUNCDEF, @$); addChild($$, $5); addChild($$, $1); addChild($$, $3); }
+  | Parameters ">=>" FunctionBody           { $$ = new Node(2, NodeType::FUNCDEF, @$); addChild($$, $3); addChild($$, $1); }
   ;
 
 FunctionBody:
@@ -144,18 +144,18 @@ FunctionBody:
   ;
 
 Parameters:
-    '(' ')'               { $$ = new Node(0, PARAMLIST, @$); }
+    '(' ')'               { $$ = new Node(0, NodeType::PARAMLIST, @$); }
   | '(' ParameterList ')' { $$ = $2; }
   ;
 
 ParameterList:
-    Parameter                   { $$ = new Node(1, PARAMLIST, @$); addChild($$, $1); }
+    Parameter                   { $$ = new Node(1, NodeType::PARAMLIST, @$); addChild($$, $1); }
   | ParameterList ',' Parameter { $$ = $1; addChild($$, $3); }
   ;
 
 Parameter:
-    ID          { $$ = new Node(0, PARAM, @$); $$->value.valC = $1; }
-  | ID ':' Type { $$ = new Node(1, PARAM, @$); $$->value.valC = $1; addChild($$, $3); }
+    ID          { $$ = new Node(0, NodeType::PARAM, @$); $$->value.valC = $1; }
+  | ID ':' Type { $$ = new Node(1, NodeType::PARAM, @$); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 TypeName:
@@ -169,7 +169,7 @@ Type:
   ;
 
 SingleType:
-    TypeName { $$ = new Node(1, TYPESINGLE, @$); addChild($$, $1); }
+    TypeName { $$ = new Node(1, NodeType::TYPESINGLE, @$); addChild($$, $1); }
   ;
 
 TupleType:
@@ -177,21 +177,21 @@ TupleType:
   ;
 
 TupleTypes:
-    Type                { $$ = new Node(1, TYPEMULTI, @$); addChild($$, $1); }
+    Type                { $$ = new Node(1, NodeType::TYPEMULTI, @$); addChild($$, $1); }
   | TupleTypes ',' Type { $$ = $1; addChild($$, $3); }
   ;
 
 FunctionType:
-    TupleType "->" Type { $$ = new Node(2, TYPEFN, @$); addChild($$, $1); addChild($$, $3); }
+    TupleType "->" Type { $$ = new Node(2, NodeType::TYPEFN, @$); addChild($$, $1); addChild($$, $3); }
   ;
 
 BlockStatement:
-    '{' '}'            { $$ = new Node(0, BLOCK, @$); }
+    '{' '}'            { $$ = new Node(0, NodeType::BLOCK, @$); }
   | '{' Statements '}' { $$ = $2; }
   ;
 
 Statements:
-    Statement            { $$ = new Node(1, BLOCK, @$); addChild($$, $1); }
+    Statement            { $$ = new Node(1, NodeType::BLOCK, @$); addChild($$, $1); }
   | Statements Statement { $$ = $1; addChild($$, $2); }
   ;
 
@@ -202,19 +202,19 @@ Statement:
   ;
 
 QualifiedID:
-    QualifiedIDPart                 { $$ = new Node(1, QUALID, @$); addChild($$, $1); }
-  | LibraryName ':' QualifiedIDPart { $$ = new Node(2, QUALID, @$); addChild($$, $3); addChild($$, new Node(0, LIBNAME, @$))->value.valC = $1; }
+    QualifiedIDPart                 { $$ = new Node(1, NodeType::QUALID, @$); addChild($$, $1); }
+  | LibraryName ':' QualifiedIDPart { $$ = new Node(2, NodeType::QUALID, @$); addChild($$, $3); addChild($$, new Node(0, NodeType::LIBNAME, @$))->value.valC = $1; }
   ;
 
 QualifiedIDPart:
-    ID                     { $$ = new Node(0, QUALPART, @$); $$->value.valC = $1; }
-  | ID '.' QualifiedIDPart { $$ = new Node(1, QUALPART, @$); $$->value.valC = $1; addChild($$, $3); }
+    ID                     { $$ = new Node(0, NodeType::QUALPART, @$); $$->value.valC = $1; }
+  | ID '.' QualifiedIDPart { $$ = new Node(1, NodeType::QUALPART, @$); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 QualifiedIDWithOperators:
-    QualifiedID                              { $$ = new Node(1, QUALIDOP, @$); addChild($$, $1); }
-  | PrefixOperator QualifiedIDWithOperators  { $$ = new Node(2, QUALIDOP, @$); addChild($$, new Node(0, NONE, @$))->value.valC = $1; addChild($$, $2); }
-  | QualifiedIDWithOperators PostfixOperator { $$ = new Node(2, QUALIDOP, @$); addChild($$, $1); addChild($$, new Node(0, NONE, @$))->value.valC = $2; }
+    QualifiedID                              { $$ = new Node(1, NodeType::QUALIDOP, @$); addChild($$, $1); }
+  | PrefixOperator QualifiedIDWithOperators  { $$ = new Node(2, NodeType::QUALIDOP, @$); addChild($$, new Node(0, NodeType::NONE, @$))->value.valC = $1; addChild($$, $2); }
+  | QualifiedIDWithOperators PostfixOperator { $$ = new Node(2, NodeType::QUALIDOP, @$); addChild($$, $1); addChild($$, new Node(0, NodeType::NONE, @$))->value.valC = $2; }
   ;
 
 Expression:
@@ -223,28 +223,28 @@ Expression:
   ;
 
 AssignExpression:
-    QualifiedID '=' Expression                { $$ = new Node(2, EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = getString(""); }
-  | QualifiedID CompAssignOperator Expression { $$ = new Node(2, EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
+    QualifiedID '=' Expression                { $$ = new Node(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = getString(""); }
+  | QualifiedID CompAssignOperator Expression { $$ = new Node(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
   ;
 
 BasicExpression:
     BasicValue                                        { $$ = $1; }
-  | BasicExpression BinaryOperator BasicExpression    { $$ = new Node(2, EXPRBASIC, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+  | BasicExpression BinaryOperator BasicExpression    { $$ = new Node(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   | '(' Expression ')'                                { $$ = $2; }
-  | '(' Expression ')' BinaryOperator BasicExpression { $$ = new Node(2, EXPRBASIC, @$); addChild($$, $2); $$->value.valC = $4; addChild($$, $5); }
+  | '(' Expression ')' BinaryOperator BasicExpression { $$ = new Node(2, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = $4; addChild($$, $5); }
   ;
 
 BasicValue:
     QualifiedIDWithOperators { $$ = $1; }
   | FuncDefinition           { $$ = $1; }
   | BasicValueString         { $$ = $1; }
-  | INTEGER                  { $$ = new Node(0, VALINT, @$); $$->value.valI = $1; }
-  | FLOAT                    { $$ = new Node(0, VALFLOAT, @$); $$->value.valF = $1; }
-  | CHAR                     { $$ = new Node(0, VALINT, @$); $$->value.valC = $1; }
+  | INTEGER                  { $$ = new Node(0, NodeType::VALINT, @$); $$->value.valI = $1; }
+  | FLOAT                    { $$ = new Node(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
+  | CHAR                     { $$ = new Node(0, NodeType::VALINT, @$); $$->value.valC = $1; }
   ;
 
 BasicValueString:
-    STRING { $$ = new Node(0, VALSTR, @$); $$->value.valC = $1; }
+    STRING { $$ = new Node(0, NodeType::VALSTR, @$); $$->value.valC = $1; }
   ;
 
 BinaryOperator:
