@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc == 1) {
 		PLOGF << "No input files";
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	bool astDump = options.count("ast-dump");
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 		std::string filename = argv[i];
 
 		PLOGI << "Parsing file " << filename;
-		b.parse(filename);
+		if (b.parse(filename) != 0) return EXIT_FAILURE;
 		if (astDump) {
 			std::string astFile = filename.substr(0, filename.find_last_of('.')) += ".ast";
 			PLOGI << "Dumping AST to " << astFile;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if (astDump) return 0;
+	if (astDump) return EXIT_SUCCESS;
 }
 
 std::vector<std::string> strings;

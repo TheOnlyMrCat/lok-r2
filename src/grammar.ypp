@@ -67,15 +67,18 @@ struct Node {
 
 %token DBLCOLON "::" DBLBAR "||" DBLAND "&&" DBLXOR "^^" DBLLEFT "<<" DBLRIGHT ">>" TPLRIGHT ">>>" DBLPLUS "++" DBLMINUS "--" DBLNOT "!!"
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
-%token RSARROW "->" RDARROW "=>" RRDARROW ">=>" RUNK "run" LOADK "load"
+%token RSARROW "->" RDARROW "=>" RRDARROW ">=>"
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
+
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for"
 
 %type <strings_t> LibraryName BinaryOperator PrefixOperator PostfixOperator ArithmeticOperator LogicalOperator ComparisonOperator CompAssignOperator
 %type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType
 %type <NodePtr> BlockStatement Statements Statement
+%type <NodePtr> IfStatement ForStatement
 %type <NodePtr> Expression AssignExpression BasicExpression Expressions
 %type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue BasicValueString FunctionCall
 
@@ -213,7 +216,17 @@ Statement:
     Expression ';'   { $$ = std::move($1); }
   | BasicDeclaration { $$ = std::move($1); }
   | BlockStatement   { $$ = std::move($1); }
+  | IfStatement      { $$ = std::move($1); }
+  | ForStatement     { $$ = std::move($1); }
   ;
+
+IfStatement:
+    "if" '(' Expression ')' Statement                  { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); /* TODO: Basic expression maybe? */ }
+  | "if" '(' Expression ')' Statement "else" Statement { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  ;
+
+ForStatement:
+    "for" '(' BasicDeclaration BasicExpression ';' Expression ')' Statement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
 
 QualifiedID:
     QualifiedIDPart                 { $$ = std::make_unique<Node>(1, NodeType::QUALID, @$); addChild($$, $1); }
@@ -339,5 +352,5 @@ CompAssignOperator:
 %%
 
 void yy::parser::error(const location_type& l, const std::string& p) {
-    PLOGE << l.begin.filename << ':' << l.begin.line << '.' << l.begin.column << ": " << p;
+    PLOGE << *l.begin.filename << ':' << l.begin.line << '.' << l.begin.column << ": " << p;
 }
