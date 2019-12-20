@@ -4,7 +4,7 @@ install:
 - touch configure aclocal.m4 Makefile.in
 - wget https://mirror.freedif.org/GNU/bison/bison-3.5.tar.gz
 - tar -xzf bison-3.5.tar.gz
-- cd bison-3.5; ./configure && make && make install
+- cd bison-3.5; ./configure && make && sudo make install
 
 compiler:
 - gcc
