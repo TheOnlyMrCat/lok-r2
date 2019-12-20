@@ -2,6 +2,7 @@
 #include <plog/Appenders/ConsoleAppender.h>
 
 #include "clok.hpp"
+#include "bridge.hpp"
 
 #ifdef DEBUG
 extern int yy_flex_debug, yydebug;
@@ -77,11 +78,14 @@ int main(int argc, char *argv[]) {
 
 	bool astDump = options.count("ast-dump");
 
+	Bridge b;
+
 	PLOGI << "Parsing " << argc - 1 << " files";
 	for (int i = 1; i < argc; i++) {
-		filename = argv[i];
+		std::string filename = argv[i];
+
 		PLOGI << "Parsing file " << filename;
-		parse();
+		b.parse(filename);
 		if (astDump) {
 			std::string astFile = filename.substr(0, filename.find_last_of('.')) += ".ast";
 			PLOGI << "Dumping AST to " << astFile;

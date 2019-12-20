@@ -9,6 +9,7 @@ Makefile
 
 grammar.output
 grammar*.hpp
+location.hh
 nodetypenames.h
 grammar*.cpp
 lexer.cpp

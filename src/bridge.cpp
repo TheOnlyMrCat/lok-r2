@@ -1,4 +1,6 @@
 #include "clok.hpp"
+#include "location.hh"
+#include "bridge.hpp"
 
 #include <cstdio>
 #include <fstream>
@@ -6,18 +8,17 @@
 #include <iterator>
 
 std::unique_ptr<Node> parseResult;
-std::string filename;
 
 extern std::FILE *yyin;
 
-int parse() {
+Bridge::Bridge() : parser(*this) {}
+
+int Bridge::parse(std::string &filename) {
     yyin = std::fopen(filename.c_str(), "r");
-    parseResult = std::unique_ptr<Node>(new Node(0, NodeType::NONE, {}));
-
-    int result = yyparse();
-
-    PLOGD << "yyparse() returned " << result;
-
+    location.initialize(&filename);
+    parseResult = std::unique_ptr<Node>(new Node(0, NodeType::NONE, location));
+    int result = parser();
+    PLOGD << "parse function returned " << result;
     return result;
 }
 
@@ -42,7 +43,7 @@ void recursivePrint(std::unique_ptr<Node>& node, std::ofstream& out, int depth) 
         out << '-';
     }
 
-    out << '[' << static_cast<unsigned int>(node->type) << ':' << mapNodeType(node->type) << "] <line:" << node->location.first_line << '-' << node->location.last_line << ", col:" << node->location.first_column << '-' << node->location.last_column << '>';
+    out << '[' << static_cast<unsigned int>(node->type) << ':' << mapNodeType(node->type) << "] <start:" << node->location.begin.line << ':' << node->location.begin.column << ", end:" << node->location.end.line << '-' << node->location.end.column << '>';
     switch (node->type) {
         case NodeType::DECL:
         case NodeType::PARAM:

@@ -1,79 +1,83 @@
 %{
 #include <stdlib.h>
 #include "clok.hpp"
+#include "bridge.hpp"
 #include "grammar.hpp"
+#include "location.hh"
 
 int backslashSequence(char);
 
 int column;
-
-#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
-    yylloc.first_column = column; yylloc.last_column = column + yyleng - 1; \
-    column += yyleng;
 %}
+
+typedef yy::parser::token token
 
 %option noyywrap
 %option yylineno
 %%
+%{
+    yy::location& lok = bridge.location;
+    lok.step();
+%}
 
-run/[^A-Za-z0-9_]  { return RUNK; }
-load/[^A-Za-z0-9_] { return LOADK; }
+run/[^A-Za-z0-9_]  { return yy::parser::make_RUNK(lok); }
+load/[^A-Za-z0-9_] { return yy::parser::make_LOADK(lok); }
 
-[A-Za-z_][A-Za-z0-9_]* { yylval.valI = getString(yytext); return ID; }
+[A-Za-z_][A-Za-z0-9_]* { return yy::parser::make_ID(getString(yytext), lok); }
 
-[+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with decimal point
-[+-]?0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with decimal point
-[+-]?[0-9]+[eE][+-]?[:digit]+f?                                { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point with exponent
-[+-]?0[xX][0-9A-Fa-f]+[pP][+-]?[0-9A-Fa-f]+f?                  { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point with exponent
-[+-]?[0-9]+f                                                   { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Decimal floating point integer
-[+-]?0[xX][0-9]+f                                              { yylval.valF = strtod(yytext, NULL); return FLOAT; } // Hex floating point integer
+[+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point with decimal point
+[+-]?0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point with decimal point
+[+-]?[0-9]+[eE][+-]?[:digit]+f?                                { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point with exponent
+[+-]?0[xX][0-9A-Fa-f]+[pP][+-]?[0-9A-Fa-f]+f?                  { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point with exponent
+[+-]?[0-9]+f                                                   { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point integer
+[+-]?0[xX][0-9]+f                                              { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point integer
 
-[+-]?[0-9]+            { yylval.valI = strtol(yytext, NULL, 10); return INTEGER; } // Decimal integer literal
-[+-]?0[xX][0-9A-Fa-f]+ { yylval.valI = strtol(yytext, NULL, 16); return INTEGER; } // Hex integer literal
+[+-]?[0-9]+            { return yy::parser::make_INTEGER(strtol(yytext, NULL, 10), lok); } // Decimal integer literal
+[+-]?0[xX][0-9A-Fa-f]+ { return yy::parser::make_INTEGER(strtol(yytext, NULL, 16), lok); } // Hex integer literal
 
-\'\\x[0-9A-Fa-f]{2}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
-\'\\u[0-9A-Fa-f]{4}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
-\'\\U[0-9A-Fa-f]{8}\' { yylval.valI = strtol(yytext + (3 * sizeof(char)), 0, 16); return CHAR; }
-\'\\.\'               { yylval.valI = backslashSequence(yytext[2]); return CHAR; }
-\'.\'                 { yylval.valI = (long) yytext[1]; return CHAR; }
+\'\\x[0-9A-Fa-f]{2}\' { return yy::parser::make_CHAR(strtol(yytext + (3 * sizeof(char)), 0, 16), lok); }
+\'\\u[0-9A-Fa-f]{4}\' { return yy::parser::make_CHAR(strtol(yytext + (3 * sizeof(char)), 0, 16), lok); }
+\'\\U[0-9A-Fa-f]{8}\' { return yy::parser::make_CHAR(strtol(yytext + (3 * sizeof(char)), 0, 16), lok); }
+\'\\.\'               { return yy::parser::make_CHAR(backslashSequence(yytext[2]), lok); }
+\'.\'                 { return yy::parser::make_CHAR((long) yytext[1], lok); }
 
-\"[^\"\n]*\" { yylval.valI = getString(yytext); return STRING; }
+\"[^\"\n]*\" { return yy::parser::make_STRING(getString(yytext), lok); }
 
-"::" { return DBLCOLON; }
-"->" { return RSARROW; }
-"||" { return DBLBAR; }
-"&&" { return DBLAND; }
-"^^" { return DBLXOR; }
-"<<" { return DBLLEFT; }
-">>" { return DBLRIGHT; }
-"++" { return DBLPLUS; }
-"--" { return DBLMINUS; }
-"!!" { return DBLNOT; }
-"==" { return DBLEQ; }
-"!=" { return NOTEQ; }
-">=" { return GTEQ; }
-"<=" { return LTEQ; }
-"=>" { return RDARROW; }
+"::" { return yy::parser::make_DBLCOLON(lok); }
+"->" { return yy::parser::make_RSARROW(lok); }
+"||" { return yy::parser::make_DBLBAR(lok); }
+"&&" { return yy::parser::make_DBLAND(lok); }
+"^^" { return yy::parser::make_DBLXOR(lok); }
+"<<" { return yy::parser::make_DBLLEFT(lok); }
+">>" { return yy::parser::make_DBLRIGHT(lok); }
+"++" { return yy::parser::make_DBLPLUS(lok); }
+"--" { return yy::parser::make_DBLMINUS(lok); }
+"!!" { return yy::parser::make_DBLNOT(lok); }
+"==" { return yy::parser::make_DBLEQ(lok); }
+"!=" { return yy::parser::make_NOTEQ(lok); }
+">=" { return yy::parser::make_GTEQ(lok); }
+"<=" { return yy::parser::make_LTEQ(lok); }
+"=>" { return yy::parser::make_RDARROW(lok); }
 
-"+=" { return COMPADD; }
-"-=" { return COMPSUB; }
-"*=" { return COMPMUL; }
-"/=" { return COMPDIV; }
-"%=" { return COMPMOD; }
-"&=" { return COMPAND; }
-"|=" { return COMPIOR; }
-"^=" { return COMPXOR; }
-"<<=" { return COMPASL; }
-">>=" { return COMPASR; }
-">>>=" { return COMPUSR; }
+"+=" { return yy::parser::make_COMPADD(lok); }
+"-=" { return yy::parser::make_COMPSUB(lok); }
+"*=" { return yy::parser::make_COMPMUL(lok); }
+"/=" { return yy::parser::make_COMPDIV(lok); }
+"%=" { return yy::parser::make_COMPMOD(lok); }
+"&=" { return yy::parser::make_COMPAND(lok); }
+"|=" { return yy::parser::make_COMPIOR(lok); }
+"^=" { return yy::parser::make_COMPXOR(lok); }
+"<<=" { return yy::parser::make_COMPASL(lok); }
+">>=" { return yy::parser::make_COMPASR(lok); }
+">>>=" { return yy::parser::make_COMPUSR(lok); }
 
-">>>" { return TPLRIGHT; }
-">=>" { return RRDARROW; }
+">>>" { return yy::parser::make_TPLRIGHT(lok); }
+">=>" { return yy::parser::make_RRDARROW(lok); }
 
-<<EOF>>    { return 0; }
+<<EOF>>    { return yy::parser::make_END(lok); }
 [ \t]+     // Whitespace need not be
-\n         { column = 1; }
-.          { return yytext[0]; }
+\n+        { lok.lines(yyleng); lok.step(); }
+.          { return yy::parser::symbol_type(yytext[0], lok); }
 
 %%
 

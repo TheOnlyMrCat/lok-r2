@@ -42,6 +42,6 @@ AC_FUNC_STRTOD
 AC_CHECK_FUNCS([gettimeofday memset mkdir strdup strerror strstr strtol])
 
 # Checks some stuff?
-AX_CXX_COMPILE_STDCXX([11])
+AX_CXX_COMPILE_STDCXX([14])
 
 AC_OUTPUT
