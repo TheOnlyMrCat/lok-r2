@@ -8,17 +8,24 @@
 int backslashSequence(char);
 
 int column;
+
+#define YY_USER_ACTION  lok.columns (yyleng);
 %}
 
-typedef yy::parser::token token
 
-%option noyywrap
-%option yylineno
+
+%option noyywrap nounput noinput
+%x comment
 %%
 %{
     yy::location& lok = bridge.location;
     lok.step();
 %}
+
+"//"[^\n]*    // Greetings, my friend, you've just discovered comments
+"/*"          BEGIN(comment);
+<comment>"*/" BEGIN(INITIAL);
+<comment>.    // Swallow everything else
 
 run/[^A-Za-z0-9_]  { return yy::parser::make_RUNK(lok); }
 load/[^A-Za-z0-9_] { return yy::parser::make_LOADK(lok); }

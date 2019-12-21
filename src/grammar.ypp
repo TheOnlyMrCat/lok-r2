@@ -226,7 +226,7 @@ IfStatement:
   ;
 
 ForStatement:
-    "for" '(' BasicDeclaration BasicExpression ';' Expression ')' Statement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
+    "for" '(' BasicDeclaration Expression ';' Expression ')' Statement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
 
 QualifiedID:
     QualifiedIDPart                 { $$ = std::make_unique<Node>(1, NodeType::QUALID, @$); addChild($$, $1); }
