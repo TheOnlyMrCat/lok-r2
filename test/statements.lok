@@ -2,12 +2,18 @@ run 0 () >=> {
     a: bit = 1;
     b := 32;
 
-    if (a) a = 0;
+    /* This syntax may be changed, because it is inconsistent with
+     * the type of construct that warrants a "=>" and requires an
+     * excessive number of rules to properly define
+     */
+
+    if (a) => a = 0;
 
     if (b <= 42) {
         c := 20;
-        if (c != 20) b = 4;
-        else b = 20; // This syntax will be changed, as whitespace is necessary between "else" and "b"
+        if (c != 20) => b = 4;
+        else if (c < 20) => b = c;
+        else => b = 20;
     } else {
         b = 42;
     }
@@ -16,8 +22,11 @@ run 0 () >=> {
 load(std:io)
 
 run 1 () >=> {
-    /* Declaration, Expression, Expression */
-    for (i := 0; i <= 10; i++) {
-        std.out.println(i);
+    // Declaration, Expression, Expression
+    for (i := 0; i <= 10; i++) => std.out.println(i);
+
+    for (y := 0; y < 5; y++)
+    for (x := 0; x < 5; x++) {
+        std.out.printfln("%d, %d", x, y);
     }
 }

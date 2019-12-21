@@ -82,6 +82,8 @@ struct Node {
 %type <NodePtr> Expression AssignExpression BasicExpression Expressions
 %type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue BasicValueString FunctionCall
 
+%right "If" "else"
+
 %left "||"
 %left "^^"
 %left "&&"
@@ -221,12 +223,25 @@ Statement:
   ;
 
 IfStatement:
-    "if" '(' Expression ')' Statement                  { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); /* TODO: Basic expression maybe? */ }
-  | "if" '(' Expression ')' Statement "else" Statement { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+    "if" '(' Expression ')' BlockStatement                       %prec "If" { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); }
+  | "if" '(' Expression ')' BlockStatement "else" IfStatement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' BlockStatement "else" BlockStatement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' BlockStatement "else" "=>" Statement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $8);}
+  | "if" '(' Expression ')' IfStatement                          %prec "If" { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); }
+  | "if" '(' Expression ')' IfStatement "else" IfStatement       %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' IfStatement "else" BlockStatement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' IfStatement "else" "=>" Statement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $8);}
+  | "if" '(' Expression ')' "=>" Statement                       %prec "If" { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); }
+  | "if" '(' Expression ')' "=>" Statement "else" IfStatement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $8);}
+  | "if" '(' Expression ')' "=>" Statement "else" BlockStatement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $8);}
+  | "if" '(' Expression ')' "=>" Statement "else" "=>" Statement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $9);}
   ;
 
 ForStatement:
-    "for" '(' BasicDeclaration Expression ';' Expression ')' Statement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
+    "for" '(' BasicDeclaration Expression ';' Expression ')' BlockStatement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
+  | "for" '(' BasicDeclaration Expression ';' Expression ')' ForStatement   { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
+  | "for" '(' BasicDeclaration Expression ';' Expression ')' "=>" Statement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $9); }
+  ;
 
 QualifiedID:
     QualifiedIDPart                 { $$ = std::make_unique<Node>(1, NodeType::QUALID, @$); addChild($$, $1); }
@@ -331,8 +346,8 @@ PrefixOperator:
   ;
 
 PostfixOperator:
-    "++" { $$ = getString("++"); }
-  | "--" { $$ = getString("--"); }
+    "--" { $$ = getString("--"); }
+  | "++" { $$ = getString("++"); }
   ;
 
 CompAssignOperator:
