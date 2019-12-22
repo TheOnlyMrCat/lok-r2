@@ -75,12 +75,12 @@ struct Node {
 
 %type <strings_t> LibraryName PrefixOperator PostfixOperator CompAssignOperator
 %type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration
-%type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter
-%type <NodePtr> Type SingleType TupleTypes TupleType FunctionType
+%type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
+%type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
 %type <NodePtr> BlockStatement Statements Statement
 %type <NodePtr> IfStatement ForStatement
-%type <NodePtr> Expression AssignExpression BasicExpression Expressions
-%type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators TypeName BasicValue BasicValueString FunctionCall
+%type <NodePtr> Expression AssignExpression BasicExpression
+%type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators BasicValue BasicValueString
 
 %right "If" "else"
 %nonassoc "Expression"
@@ -168,18 +168,24 @@ Parameters:
   | '(' ParameterList ')' { $$ = std::move($2); }
   ;
 
+Arguments:
+    '(' ')'              { $$ = std::make_unique<Node>(0, NodeType::ARGLIST, @$); }
+  | '(' ArgumentList ')' { $$ = std::move($2); }
+  ;
+
 ParameterList:
     Parameter                   { $$ = std::make_unique<Node>(1, NodeType::PARAMLIST, @$); addChild($$, $1); }
   | ParameterList ',' Parameter { $$ = std::move($1); addChild($$, $3); }
   ;
 
+ArgumentList:
+    Expression                  { $$ = std::make_unique<Node>(1, NodeType::ARGLIST, @$); addChild($$, $1); }
+  | ArgumentList ',' Expression { $$ = std::move($1); addChild($$, $3); }
+  ;
+
 Parameter:
     ID          { $$ = std::make_unique<Node>(0, NodeType::PARAM, @$); $$->value.valC = $1; }
   | ID ':' Type { $$ = std::make_unique<Node>(1, NodeType::PARAM, @$); $$->value.valC = $1; addChild($$, $3); }
-  ;
-
-TypeName:
-    QualifiedID { $$ = std::move($1); }
   ;
 
 Type:
@@ -189,7 +195,13 @@ Type:
   ;
 
 SingleType:
-    TypeName { $$ = std::make_unique<Node>(1, NodeType::TYPESINGLE, @$); addChild($$, $1); }
+    QualifiedID TypeQualifiers { $$ = std::make_unique<Node>(2, NodeType::TYPESINGLE, @$); addChild($$, $1); addChild($$, $2); }
+  ;
+
+TypeQualifiers:
+    %empty                 { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALS, @$); }
+  | TypeQualifiers '*'     { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUAL, @$); q->value.valI = 1; addChild($$, q); }
+  | TypeQualifiers '[' ']' { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUAL, @$); q->value.valI = 2; addChild($$, q); }
   ;
 
 TupleType:
@@ -258,11 +270,8 @@ QualifiedIDWithOperators:
     QualifiedID                                                      { $$ = std::make_unique<Node>(1, NodeType::QUALIDOP, @$); addChild($$, $1); }
   | PrefixOperator QualifiedIDWithOperators  %prec "PrefixOperator"  { $$ = std::make_unique<Node>(2, NodeType::QUALIDOP, @$); NodePtr op = std::make_unique<Node>(0, NodeType::NONE, @$); op->value.valC = $1; addChild($$, op); addChild($$, $2); }
   | QualifiedIDWithOperators PostfixOperator %prec "PostfixOperator" { $$ = std::make_unique<Node>(2, NodeType::QUALIDOP, @$); addChild($$, $1); NodePtr op = std::make_unique<Node>(0, NodeType::NONE, @$); op->value.valC = $2; addChild($$, op); }
-  ;
-
-Expressions:
-    Expression                 { $$ = std::make_unique<Node>(1, NodeType::EXPRMULTI, @$); addChild($$, $1); }
-  | Expressions ',' Expression { $$ = std::move($1); addChild($$, $3); }
+  | QualifiedIDWithOperators Arguments                               { $$ = std::make_unique<Node>(2, NodeType::QUALIDOP, @$); addChild($$, $1); addChild($$, $2); }
+  | QualifiedIDWithOperators '[' Expression ']'                      { $$ = std::make_unique<Node>(2, NodeType::QUALIDOP, @$); addChild($$, $1); addChild($$, $3); }
   ;
 
 Expression:
@@ -301,13 +310,8 @@ BasicExpression:
   | BasicExpression "<=>" BasicExpression { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<=>"); addChild($$, $3); }
   ;
 
-FunctionCall:
-    QualifiedIDWithOperators '(' Expressions ')' { $$ = std::make_unique<Node>(2, NodeType::FUNCCALL, @$); addChild($$, $1); addChild($$, $3); }
-  ;
-
 BasicValue:
     QualifiedIDWithOperators { $$ = std::move($1); }
-  | FunctionCall             { $$ = std::move($1); }
   | FuncDefinition           { $$ = std::move($1); }
   | BasicValueString         { $$ = std::move($1); }
   | INTEGER                  { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
