@@ -57,7 +57,7 @@ void recursivePrint(std::unique_ptr<Node>& node, std::ofstream& out, int depth) 
             break;
         case NodeType::RUN:
         case NodeType::VALINT:
-        case NodeType::TYPEQUAL:
+        case NodeType::TYPEQUALARR:
             out << " -- " << node->value.valI;
             break;
         case NodeType::VALFLOAT:

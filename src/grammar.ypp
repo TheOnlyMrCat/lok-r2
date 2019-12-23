@@ -71,15 +71,16 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
 
-%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while"
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class"
 
 %type <strings_t> LibraryName PrefixOperator PostfixOperator CompAssignOperator
-%type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration
+%type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
+%type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
 %type <NodePtr> BlockStatement Statements Statement
 %type <NodePtr> IfStatement ForStatement ForArguments WhileStatement
-%type <NodePtr> Expression AssignExpression BasicExpression
+%type <NodePtr> Expression AssignExpression BasicExpression ArithmeticExpression
 %type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators BasicValue BasicValueString
 
 %right "If" "else"
@@ -139,6 +140,7 @@ LibraryName:
 NamespaceItem:
     BasicDeclaration { $$ = std::move($1); }
   | RunDeclaration   { $$ = std::move($1); }
+  | ClassDefinition  { $$ = std::move($1); }
   ;
 
 BasicDeclaration:
@@ -161,6 +163,38 @@ FuncDefinition:
 
 FunctionBody:
     BlockStatement { $$ = std::move($1); }
+  ;
+
+ClassDefinition:
+    ID ':' "struct" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $5); addChild($$, $8); }
+  | ID ':' "struct" ">=>" '{' ClassBody '}'                { $$ = std::make_unique<Node>(1, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $6); }
+  | ID ':' "class" "=>" TupleType ">=>" '{' ClassBody '}'  { $$ = std::make_unique<Node>(2, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $5); addChild($$, $8); }
+  | ID ':' "class" ">=>" '{' ClassBody '}'                 { $$ = std::make_unique<Node>(1, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $6); }
+  ;
+
+ClassBody:
+    %empty              { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
+  | ClassBody ClassItem { $$ = std::move($1); addChild($$, $2); }
+  ;
+
+ClassItem:
+    BasicDeclaration { $$ = std::move($1); }
+  | CtorDefinition   { $$ = std::move($1); }
+  ;
+
+CtorDefinition:
+    "new" Parameters "=>" CtorInit ">=>" FunctionBody { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); addChild($$, $6); }
+  | "new" Parameters ">=>" FunctionBody               { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
+  | "new" Parameters "=>" CtorInit ';'                { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
+  ;
+
+CtorInit:
+    CtorAssign              { $$ = std::make_unique<Node>(1, NodeType::CTORINIT, @$); addChild($$, $1); }
+  | CtorInit ',' CtorAssign { $$ = std::move($1); addChild($$, $3); }
+  ;
+
+CtorAssign:
+    ID '=' BasicExpression { $$ = std::make_unique<Node>(1, NodeType::EXPRASSIG, @$); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 Parameters:
@@ -199,9 +233,10 @@ SingleType:
   ;
 
 TypeQualifiers:
-    %empty                 { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALS, @$); }
-  | TypeQualifiers '*'     { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUAL, @$); q->value.valI = 1; addChild($$, q); }
-  | TypeQualifiers '[' ']' { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUAL, @$); q->value.valI = 2; addChild($$, q); }
+    %empty                         { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALS, @$); }
+  | TypeQualifiers '*'             { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUALPTR, @$); addChild($$, q); }
+  | TypeQualifiers '[' INTEGER ']' { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); q->value.valI = $3; addChild($$, q); }
+  | TypeQualifiers '[' ']'         { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); addChild($$, q); }
   ;
 
 TupleType:
@@ -293,8 +328,8 @@ QualifiedIDWithOperators:
   ;
 
 Expression:
-    AssignExpression %prec "Expression" { $$ = std::move($1); }
-  | BasicExpression  %prec "Expression" { $$ = std::move($1); }
+    AssignExpression      %prec "Expression" { $$ = std::move($1); }
+  | ArithmeticExpression  %prec "Expression" { $$ = std::move($1); }
   ;
 
 AssignExpression:
@@ -302,9 +337,33 @@ AssignExpression:
   | QualifiedID CompAssignOperator Expression { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
   ;
 
+ArithmeticExpression:
+    BasicValue                                      { $$ = std::move($1); }
+  | '(' Expression ')'                              { $$ = std::move($2); }
+  | ArithmeticExpression '+' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("+"); addChild($$, $3); }
+  | ArithmeticExpression '-' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("-"); addChild($$, $3); }
+  | ArithmeticExpression '*' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("*"); addChild($$, $3); }
+  | ArithmeticExpression '/' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("/"); addChild($$, $3); }
+  | ArithmeticExpression '%' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("%"); addChild($$, $3); }
+  | ArithmeticExpression '&' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("&"); addChild($$, $3); }
+  | ArithmeticExpression '|' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("|"); addChild($$, $3); }
+  | ArithmeticExpression '^' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("^"); addChild($$, $3); }
+  | ArithmeticExpression ">>" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString(">>"); addChild($$, $3); }
+  | ArithmeticExpression "<<" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<<"); addChild($$, $3); }
+  | ArithmeticExpression ">>>" ArithmeticExpression { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString(">>>"); addChild($$, $3); }
+  | ArithmeticExpression "&&" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("&&"); addChild($$, $3); }
+  | ArithmeticExpression "||" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("||"); addChild($$, $3); }
+  | ArithmeticExpression "^^" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("^^"); addChild($$, $3); }
+  | ArithmeticExpression "==" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("=="); addChild($$, $3); }
+  | ArithmeticExpression "!=" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("!="); addChild($$, $3); }
+  | ArithmeticExpression '>' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString(">"); addChild($$, $3); }
+  | ArithmeticExpression '<' ArithmeticExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<"); addChild($$, $3); }
+  | ArithmeticExpression ">=" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString(">="); addChild($$, $3); }
+  | ArithmeticExpression "<=" ArithmeticExpression  { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<="); addChild($$, $3); }
+  | ArithmeticExpression "<=>" ArithmeticExpression { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<=>"); addChild($$, $3); }
+
 BasicExpression:
     BasicValue                            { $$ = std::move($1); }
-  | '(' Expression ')'                    { $$ = std::move($2); }
   | BasicExpression '+' BasicExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("+"); addChild($$, $3); }
   | BasicExpression '-' BasicExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("-"); addChild($$, $3); }
   | BasicExpression '*' BasicExpression   { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("*"); addChild($$, $3); }
