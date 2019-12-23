@@ -30,3 +30,11 @@ run 1 () >=> {
         std.out.printfln("%d, %d", x, y);
     }
 }
+
+run 2 () >=> {
+    doContinue := true;
+
+    while (doContinue) {
+        continue = false;
+    }
+}

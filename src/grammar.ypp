@@ -71,14 +71,14 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
 
-%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for"
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while"
 
 %type <strings_t> LibraryName PrefixOperator PostfixOperator CompAssignOperator
 %type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
 %type <NodePtr> BlockStatement Statements Statement
-%type <NodePtr> IfStatement ForStatement
+%type <NodePtr> IfStatement ForStatement ForArguments WhileStatement
 %type <NodePtr> Expression AssignExpression BasicExpression
 %type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators BasicValue BasicValueString
 
@@ -233,6 +233,7 @@ Statement:
   | BlockStatement   { $$ = std::move($1); }
   | IfStatement      { $$ = std::move($1); }
   | ForStatement     { $$ = std::move($1); }
+  | WhileStatement   { $$ = std::move($1); }
   ;
 
 IfStatement:
@@ -251,9 +252,26 @@ IfStatement:
   ;
 
 ForStatement:
-    "for" '(' BasicDeclaration Expression ';' Expression ')' BlockStatement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
-  | "for" '(' BasicDeclaration Expression ';' Expression ')' ForStatement   { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $8); }
-  | "for" '(' BasicDeclaration Expression ';' Expression ')' "=>" Statement { $$ = std::make_unique<Node>(4, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $4); addChild($$, $6); addChild($$, $9); }
+    "for" '(' ForArguments ')' BlockStatement { $$ = std::make_unique<Node>(2, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $5); }
+  | "for" '(' ForArguments ')' ForStatement   { $$ = std::make_unique<Node>(2, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $5); }
+  | "for" '(' ForArguments ')' "=>" Statement { $$ = std::make_unique<Node>(2, NodeType::STMTFOR, @$); addChild($$, $3); addChild($$, $6); }
+  ;
+
+ForArguments:
+    BasicDeclaration BasicExpression ';' Expression { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, $1); addChild($$, $2); addChild($$, $4); }
+  | ';' BasicExpression ';' Expression              { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, $2); addChild($$, $4); }
+  | BasicDeclaration ';' Expression                 { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, $1); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, $3); }
+  | BasicDeclaration BasicExpression ';'            { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, $1); addChild($$, $2); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); }
+  | ';' ';' Expression                              { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, $3); }
+  | BasicDeclaration ';'                            { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, $1); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); }
+  | ';' BasicExpression ';'                         { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, $2); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); }
+  | ';' ';'                                         { $$ = std::make_unique<Node>(3, NodeType::ARGSFOR, @$); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); addChild($$, std::make_unique<Node>(0, NodeType::NONE, @$)); }
+  ;
+
+WhileStatement:
+    "while" '(' Expression ')' BlockStatement { $$ = std::make_unique<Node>(2, NodeType::STMTWHILE, @$); addChild($$, $3); addChild($$, $5); }
+  | "while" '(' Expression ')' WhileStatement { $$ = std::make_unique<Node>(2, NodeType::STMTWHILE, @$); addChild($$, $3); addChild($$, $5); }
+  | "while" '(' Expression ')' "=>" Statement { $$ = std::make_unique<Node>(2, NodeType::STMTWHILE, @$); addChild($$, $3); addChild($$, $6); }
   ;
 
 QualifiedID:

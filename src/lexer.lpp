@@ -27,11 +27,12 @@ int column;
 <comment>"*/" BEGIN(INITIAL);
 <comment>.    // Swallow everything else
 
-run/[^A-Za-z0-9_]  { return yy::parser::make_RUNK(lok); }
-load/[^A-Za-z0-9_] { return yy::parser::make_LOADK(lok); }
-if/[^A-Za-z0-9_]   { return yy::parser::make_IFK(lok); }
-else/[^A-Za-z0-9_] { return yy::parser::make_ELSEK(lok); }
-for/[^A-Za-z0-9_]  { return yy::parser::make_FORK(lok); }
+run/[^A-Za-z0-9_]   { return yy::parser::make_RUNK(lok); }
+load/[^A-Za-z0-9_]  { return yy::parser::make_LOADK(lok); }
+if/[^A-Za-z0-9_]    { return yy::parser::make_IFK(lok); }
+else/[^A-Za-z0-9_]  { return yy::parser::make_ELSEK(lok); }
+for/[^A-Za-z0-9_]   { return yy::parser::make_FORK(lok); }
+while/[^A-Za-z0-9_] { return yy::parser::make_WHILEK(lok); }
 
 [A-Za-z_][A-Za-z0-9_]* { return yy::parser::make_ID(getString(yytext), lok); }
 
