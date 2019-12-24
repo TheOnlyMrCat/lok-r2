@@ -101,7 +101,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_clok_OBJECTS = clok-main.$(OBJEXT) clok-bridge.$(OBJEXT) \
-	clok-lexer.$(OBJEXT) clok-grammar.$(OBJEXT)
+	clok-constructs.$(OBJEXT) clok-lexer.$(OBJEXT) \
+	clok-grammar.$(OBJEXT)
 clok_OBJECTS = $(am_clok_OBJECTS)
 clok_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -120,8 +121,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/clok-bridge.Po \
-	./$(DEPDIR)/clok-grammar.Po ./$(DEPDIR)/clok-lexer.Po \
-	./$(DEPDIR)/clok-main.Po
+	./$(DEPDIR)/clok-constructs.Po ./$(DEPDIR)/clok-grammar.Po \
+	./$(DEPDIR)/clok-lexer.Po ./$(DEPDIR)/clok-main.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -294,7 +295,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_YFLAGS = -d -Wno-yacc
 BUILT_SOURCES = grammar.hpp nodetypenames.h location.hh
-clok_SOURCES = main.cpp bridge.cpp lexer.lpp grammar.ypp nodetypenames.txt
+clok_SOURCES = main.cpp bridge.cpp constructs.cpp lexer.lpp grammar.ypp nodetypenames.txt
 clok_CPPFLAGS = -I../lib -Wno-deprecated-register
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -387,6 +388,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clok-bridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clok-constructs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clok-grammar.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clok-lexer.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clok-main.Po@am__quote@ # am--include-marker
@@ -440,6 +442,20 @@ clok-bridge.obj: bridge.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='bridge.cpp' object='clok-bridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o clok-bridge.obj `if test -f 'bridge.cpp'; then $(CYGPATH_W) 'bridge.cpp'; else $(CYGPATH_W) '$(srcdir)/bridge.cpp'; fi`
+
+clok-constructs.o: constructs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT clok-constructs.o -MD -MP -MF $(DEPDIR)/clok-constructs.Tpo -c -o clok-constructs.o `test -f 'constructs.cpp' || echo '$(srcdir)/'`constructs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clok-constructs.Tpo $(DEPDIR)/clok-constructs.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='constructs.cpp' object='clok-constructs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o clok-constructs.o `test -f 'constructs.cpp' || echo '$(srcdir)/'`constructs.cpp
+
+clok-constructs.obj: constructs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT clok-constructs.obj -MD -MP -MF $(DEPDIR)/clok-constructs.Tpo -c -o clok-constructs.obj `if test -f 'constructs.cpp'; then $(CYGPATH_W) 'constructs.cpp'; else $(CYGPATH_W) '$(srcdir)/constructs.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clok-constructs.Tpo $(DEPDIR)/clok-constructs.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='constructs.cpp' object='clok-constructs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o clok-constructs.obj `if test -f 'constructs.cpp'; then $(CYGPATH_W) 'constructs.cpp'; else $(CYGPATH_W) '$(srcdir)/constructs.cpp'; fi`
 
 clok-lexer.o: lexer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT clok-lexer.o -MD -MP -MF $(DEPDIR)/clok-lexer.Tpo -c -o clok-lexer.o `test -f 'lexer.cpp' || echo '$(srcdir)/'`lexer.cpp
@@ -609,6 +625,7 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/clok-bridge.Po
+	-rm -f ./$(DEPDIR)/clok-constructs.Po
 	-rm -f ./$(DEPDIR)/clok-grammar.Po
 	-rm -f ./$(DEPDIR)/clok-lexer.Po
 	-rm -f ./$(DEPDIR)/clok-main.Po
@@ -658,6 +675,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/clok-bridge.Po
+	-rm -f ./$(DEPDIR)/clok-constructs.Po
 	-rm -f ./$(DEPDIR)/clok-grammar.Po
 	-rm -f ./$(DEPDIR)/clok-lexer.Po
 	-rm -f ./$(DEPDIR)/clok-main.Po
