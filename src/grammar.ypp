@@ -76,6 +76,7 @@ struct Node {
 %type <strings_t> LibraryName PrefixOperator PostfixOperator CompAssignOperator
 %type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
+%type <NodePtr> Attributes AttributeList
 %type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
 %type <NodePtr> BlockStatement Statements Statement
@@ -144,9 +145,9 @@ NamespaceItem:
   ;
 
 BasicDeclaration:
-    ID ':' Type '=' Expression ';' { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
-  | ID ':' '=' Expression ';'      { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $4); }
-  | ID ':' Type ';'                { $$ = std::make_unique<Node>(1, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); }
+    Attributes ID ':' Type '=' Expression ';' { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $4); addChild($$, $6); }
+  | Attributes ID ':' '=' Expression ';'      { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $5); }
+  | Attributes ID ':' Type ';'                { $$ = std::make_unique<Node>(1, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $4); }
   ;
 
 RunDeclaration:
@@ -183,9 +184,9 @@ ClassItem:
   ;
 
 CtorDefinition:
-    "new" Parameters "=>" CtorInit ">=>" FunctionBody { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); addChild($$, $6); }
-  | "new" Parameters ">=>" FunctionBody               { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
-  | "new" Parameters "=>" CtorInit ';'                { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
+    Attributes "new" Parameters "=>" CtorInit ">=>" FunctionBody { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); addChild($$, $7); }
+  | Attributes "new" Parameters ">=>" FunctionBody               { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); }
+  | Attributes "new" Parameters "=>" CtorInit ';'                { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); }
   ;
 
 CtorInit:
@@ -220,6 +221,16 @@ ArgumentList:
 Parameter:
     ID          { $$ = std::make_unique<Node>(0, NodeType::PARAM, @$); $$->value.valC = $1; }
   | ID ':' Type { $$ = std::make_unique<Node>(1, NodeType::PARAM, @$); $$->value.valC = $1; addChild($$, $3); }
+  ;
+
+Attributes:
+    %empty                    { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
+  | '@' '(' AttributeList ')' { $$ = std::move($3); }
+  ;
+
+AttributeList:
+    ID               { $$ = std::make_unique<Node>(1, NodeType::ATTRS, @$); NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @$); n->value.valC = $1; addChild($$, n); }
+  | AttributeList ID { $$ = std::move($1); NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @$); n->value.valC = $2; addChild($$, n); }
   ;
 
 Type:
