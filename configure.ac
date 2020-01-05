@@ -9,7 +9,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 # Initialize automake
 AM_INIT_AUTOMAKE([foreign subdir-objects])
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -43,5 +43,8 @@ AC_CHECK_FUNCS([gettimeofday memset mkdir strdup strerror strstr strtol])
 
 # Checks some stuff?
 AX_CXX_COMPILE_STDCXX([14])
+AX_BOOST_BASE([1.56.0])
+AX_BOOST_SYSTEM
+AX_BOOST_FILESYSTEM
 
 AC_OUTPUT

@@ -10,12 +10,17 @@
 std::unique_ptr<Node> parseResult;
 
 extern std::FILE *yyin;
+extern int yydebug;
 
 Bridge::Bridge() : parser(*this) {}
 
 int Bridge::parse(std::string &filename) {
     yyin = std::fopen(filename.c_str(), "r");
     location.initialize(&filename);
+#ifdef DEBUG
+	parser.set_debug_level(yydebug);
+#endif
+
     parseResult = std::unique_ptr<Node>(new Node(0, NodeType::NONE, location));
     int result = parser();
     PLOGD << "parse function returned " << result;
@@ -75,8 +80,8 @@ void recursivePrint(std::unique_ptr<Node>& node, std::ofstream& out, int depth) 
     }
 }
 
-void dumpAST(std::string file) {
+void dumpAST(std::unique_ptr<Node>& root, std::string file) {
     std::ofstream out(file);
 
-    recursivePrint(parseResult, out, 0);
+    recursivePrint(root, out, 0);
 }

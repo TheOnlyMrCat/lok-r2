@@ -13,4 +13,4 @@ extern std::vector<std::string> strings;
 strings_t getString(std::string string);
 
 int parse();
-void dumpAST(std::string file);
+void dumpAST(std::unique_ptr<Node>& root, std::string file);
