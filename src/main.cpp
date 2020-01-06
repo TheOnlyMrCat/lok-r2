@@ -51,10 +51,16 @@ static plog::ConsoleAppender<Formatter> appender;
 std::string parseFilename(NodePtr& node);
 
 int main(int argc, char *argv[]) {
-	cxxopts::Options optParser("clok", "Compiler for the Lok programming language");
+	cxxopts::Options optParser("clok",
+#ifdef DEBUG
+		"Compiler for the Lok programming language (debug build)"
+#else
+		"Compiler for the Lok programming language"
+#endif
+	);
 
 	optParser.add_options()
-		("ast-dump", "Dump the AST's of all lok input files and quit")
+		("ast-dump", "Dump the syntax trees of all lok input files and quit")
 		("v,verbose", "Enable information output")
 		("loquacious", "Enable debug output")
 		("garrulous", "Enable scanner debug output (debug builds only)")
@@ -87,18 +93,23 @@ int main(int argc, char *argv[]) {
 
 	bool astDump = options.count("ast-dump");
 
+	std::queue<bfs::path> lokFiles;
+	std::queue<bfs::path> objFiles;
+	for (int i = 1; i < argc; i++) {
+		bfs::path file = bfs::canonical(argv[i]);
+		if (file.extension() == ".lok") {
+			lokFiles.push(file);
+		} else if (file.extension() == ".o") {
+			objFiles.push(file);
+		}
+	}
+
 	Bridge b;
 	std::unordered_map<std::string, std::unique_ptr<Node>> syntaxes;
 
-	std::queue<bfs::path> files;
-	for (int i = 1; i < argc; i++) {
-		files.push(bfs::canonical(argv[i]));
-	}
-
-	PLOGI << "Parsing " << argc - 1 << " files";
-	while (!files.empty()) {
-		std::string filename = files.front().c_str();
-		files.pop();
+	while (!lokFiles.empty()) {
+		std::string filename = lokFiles.front().c_str();
+		lokFiles.pop();
 
 		PLOGI << "Parsing file " << filename;
 		if (b.parse(filename) != 0) return EXIT_FAILURE;
@@ -116,14 +127,25 @@ int main(int argc, char *argv[]) {
 			if (node->type == NodeType::LOAD) {
 				if (node->children[0]->children[0]->type != NodeType::LIBNAME) {
 					std::string newFile = bfs::canonical(parseFilename(node->children[0]->children[0]) + ".lok", workingDir).c_str();
-					PLOGD << "File requests parse of " << newFile;
-					files.push(newFile);
+					PLOGD << "File requires parse of " << newFile;
+					lokFiles.push(newFile);
 				}
 			}
 		}
 	}
 
+	PLOGI << "Finished parsing";
+
 	if (astDump) return EXIT_SUCCESS;
+
+	PLOGI << "Extrapolating types";
+
+	std::unordered_map<std::string, Program> programs;
+
+	for (auto& syntax : syntaxes) {
+		PLOGI << "Extrapolating types for " << syntax.first;
+		programs[syntax.first] = createProgram(syntax.second);
+	}
 }
 
 std::string parseFilename(NodePtr& node) {

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 #include <plog/Log.h>
 
@@ -14,3 +15,11 @@ strings_t getString(std::string string);
 
 int parse();
 void dumpAST(std::unique_ptr<Node>& root, std::string file);
+
+class Decl {
+public:
+	virtual ~Decl();
+};
+
+typedef std::vector<std::unique_ptr<Decl>> Program;
+Program createProgram(std::unique_ptr<Node>& syntax);

@@ -33,7 +33,7 @@ std::vector<std::string> typesList;
 
 std::string mapNodeType(NodeType type) {
     if (typesList.size() == 0) {
-        std::istringstream is(std::string(reinterpret_cast<char*>(nodetypenames_txt), nodetypenames_txt_len));
+        std::istringstream is(std::string(reinterpret_cast<char*>(src_nodetypenames_txt), src_nodetypenames_txt_len));
         typesList = std::vector<std::string>(std::istream_iterator<std::string>{is}, std::istream_iterator<std::string>());
     }
     return typesList[static_cast<size_t>(type)].substr(0, typesList[static_cast<size_t>(type)].length() - 1);
