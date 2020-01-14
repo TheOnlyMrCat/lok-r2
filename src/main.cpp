@@ -138,13 +138,21 @@ int main(int argc, char *argv[]) {
 
 	if (astDump) return EXIT_SUCCESS;
 
-	PLOGI << "Extrapolating types";
+	PLOGI << "Identifying symbols";
 
 	std::unordered_map<std::string, Program> programs;
 
 	for (auto& syntax : syntaxes) {
+		PLOGI << "Identifying symbols for " << syntax.first;
+		programs[syntax.first] = Program();
+		programs[syntax.first].findSymbols(syntax.second);
+	}
+
+	PLOGI << "Extrapolating types";
+
+	for (auto& syntax : syntaxes) {
 		PLOGI << "Extrapolating types for " << syntax.first;
-		programs[syntax.first] = createProgram(syntax.second);
+		programs[syntax.first].findDeclarations(syntax.second);
 	}
 }
 
