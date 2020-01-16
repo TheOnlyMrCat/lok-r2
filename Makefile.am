@@ -17,5 +17,7 @@ clean-local:
 	rm -f src/grammar.cpp src/grammar.hpp src/grammar.output src/lexer.cpp src/location.hh
 
 debug: YFLAGS += -Dparse.trace --report state
+debug: LFLAGS += --debug
 debug: CXXFLAGS += -O0 -DDEBUG
+debug: AM_MAKEFLAGS += 'CXXFLAGS=$(CXXFLAGS)' 'LFLAGS=$(LFLAGS)'
 debug: all

@@ -51,7 +51,7 @@ static plog::ConsoleAppender<Formatter> appender;
 std::string parseFilename(NodePtr& node);
 
 int main(int argc, char *argv[]) {
-	cxxopts::Options optParser("clok",
+	cxxopts::Options optParser(argv[0],
 #ifdef DEBUG
 		"Compiler for the Lok programming language (debug build)"
 #else
@@ -60,7 +60,9 @@ int main(int argc, char *argv[]) {
 	);
 
 	optParser.add_options()
+		("h,help", "This help message")
 		("ast-dump", "Dump the syntax trees of all lok input files and quit")
+		("silent", "Disable all output")
 		("v,verbose", "Enable information output")
 		("loquacious", "Enable debug output")
 		("garrulous", "Enable scanner debug output (debug builds only)")
@@ -68,6 +70,11 @@ int main(int argc, char *argv[]) {
 	;
 
 	auto options = optParser.parse(argc, argv);
+
+	if (options.count("help")) {
+		std::cout << optParser.help();
+		return EXIT_SUCCESS;
+	}
 
 #ifdef DEBUG
 	yydebug = options.count("palaverous");
@@ -84,6 +91,8 @@ int main(int argc, char *argv[]) {
 		plog::get()->setMaxSeverity(plog::Severity::debug);
 	} else if (options.count("verbose")) {
 		plog::get()->setMaxSeverity(plog::Severity::info);
+	} else if (options.count("silent")) {
+		plog::get()->setMaxSeverity(plog::Severity::none);
 	}
 
 	if (argc == 1) {
