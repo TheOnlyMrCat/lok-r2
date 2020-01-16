@@ -1,7 +1,31 @@
 #include "type.hpp"
-#include "id.hpp"
 
 #include "clok.hpp"
+
+Type::Type(NodePtr& node) {
+	switch (node->type) {
+		case NodeType::TYPESINGLE:
+			typeType = 0;
+			basic = std::make_unique<SingleType>(node);
+			break;
+		case NodeType::TYPEMULTI:
+			typeType = 1;
+			tuple = std::make_unique<TupleType>(node);
+			break;
+		case NodeType::TYPEFN:
+			typeType = 2;
+			func = std::make_unique<ReturningType>(node);
+			break;
+		default:
+			PLOGF << "I sincerely hope that this never happens";
+			exit(1);
+	}
+}
+
+Type::~Type() = default;
+
+Type::Type(Type&&) = default;
+Type& Type::operator=(Type&&) = default;
 
 Identifier::Identifier(NodePtr& node) {
     for (NodePtr *part = &node->children[0]; (*part)->children.size() > 0; part = &(*part)->children[0]) {
@@ -9,36 +33,18 @@ Identifier::Identifier(NodePtr& node) {
     }
 }
 
-SingleType::SingleType(NodePtr& node): id(Identifier(node->children[0])) {
-    // TODO: qualifiers
+TypeQualifier::TypeQualifier(NodePtr& node) {
+	isPointer = node->type == NodeType::TYPEQUALPTR;
+	if (node->type == NodeType::TYPEQUALARR) arraySize = node->value.valI;
+	if (node->children[0]->type != NodeType::NONE) nested = std::make_unique<TypeQualifier>(node->children[0]);
 }
+
+SingleType::SingleType(NodePtr& node): id(node->children[0]), qualifier(node->children[1]) {}
 
 TupleType::TupleType(NodePtr& node) {
     for (int i = 0; i < node->children.size(); i++) {
-        switch (node->children[i]->type) {
-        case NodeType::TYPESINGLE:
-            types.push_back({0, std::make_unique<SingleType>(node->children[i]), nullptr, nullptr});
-        case NodeType::TYPEMULTI:
-            types.push_back({1, nullptr, std::make_unique<TupleType>(node->children[i]), nullptr});
-        case NodeType::TYPEFN:
-            types.push_back({2, nullptr, nullptr, std::make_unique<ReturningType>(node->children[i])});
-        default:
-            PLOGF << "Unexpected node type in tuple";
-            exit(EXIT_FAILURE);
-        }
+        types.push_back(Type(node->children[i]));
     }
 }
 
-ReturningType::ReturningType(NodePtr& node): input(node->children[0]) {
-    switch (node->children[1]->type) {
-        case NodeType::TYPESINGLE:
-            output = {0, std::make_unique<SingleType>(node->children[1]), nullptr, nullptr};
-        case NodeType::TYPEMULTI:
-            output = {1, nullptr, std::make_unique<TupleType>(node->children[1]), nullptr};
-        case NodeType::TYPEFN:
-            output = {2, nullptr, nullptr, std::make_unique<ReturningType>(node->children[1])};
-        default:
-            PLOGF << "Unexpected node type in returning type";
-            exit(EXIT_FAILURE);
-    }
-}
+ReturningType::ReturningType(NodePtr& node): input(node->children[0]), output(node->children[1]) {}

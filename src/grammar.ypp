@@ -105,11 +105,11 @@ struct Node {
 
 %code {
   inline void addChild(NodePtr& parent, NodePtr&& child) {
-    parent->children.emplace_back(std::move(child));
+    parent->children.push_back(std::move(child));
   }
 
   inline void addChild(NodePtr& parent, NodePtr& child) {
-    parent->children.emplace_back(std::move(child));
+    parent->children.push_back(std::move(child));
   }
 }
 
@@ -245,10 +245,10 @@ SingleType:
   ;
 
 TypeQualifiers:
-    %empty                         { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALS, @$); }
-  | TypeQualifiers '*'             { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUALPTR, @$); addChild($$, q); }
-  | TypeQualifiers '[' INTEGER ']' { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); q->value.valI = $3; addChild($$, q); }
-  | TypeQualifiers '[' ']'         { $$ = std::move($1); NodePtr q = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); addChild($$, q); }
+    %empty                         { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
+  | TypeQualifiers '*'             { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALPTR, @$); addChild($$, $1); }
+  | TypeQualifiers '[' INTEGER ']' { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); $$->value.valI = $3; addChild($$, $1); }
+  | TypeQualifiers '[' ']'         { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); addChild($$, $1); }
   ;
 
 TupleType:

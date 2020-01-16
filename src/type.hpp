@@ -2,19 +2,16 @@
 
 #include <memory>
 
-#include "id.hpp"
+#include "clok.hpp"
 
 typedef std::unique_ptr<class Node> NodePtr;
 
-struct Type {
-    int typeType;
-    std::unique_ptr<struct SingleType> basic;
-    std::unique_ptr<struct TupleType> tuple;
-    std::unique_ptr<struct ReturningType> func;
-};
-
 struct TypeQualifier {
+	TypeQualifier(NodePtr& node);
 
+	std::unique_ptr<TypeQualifier> nested;
+	bool isPointer;
+	int arraySize;
 };
 
 class SingleType {

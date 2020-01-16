@@ -16,8 +16,38 @@ strings_t getString(std::string string);
 int parse();
 void dumpAST(std::unique_ptr<Node>& root, std::string file);
 
-struct Symbol {
+struct SingleType;
+struct TupleType;
+struct ReturningType;
 
+struct Type {
+	Type(NodePtr& node);
+	Type(Type&&);
+    Type& operator=(Type&&);
+	~Type();
+
+    int typeType;
+    std::unique_ptr<SingleType> basic;
+    std::unique_ptr<TupleType> tuple;
+    std::unique_ptr<ReturningType> func;
+};
+
+struct Identifier {
+    Identifier(NodePtr& node);
+
+private:
+    std::vector<strings_t> parts;
+};
+
+class Symbol {
+public:
+	std::string toLokConv();
+	std::string toCxxConv();
+	std::string toCConv();
+
+private:
+	Type type;
+	Identifier id;
 };
 
 class Decl {
@@ -27,8 +57,6 @@ public:
 
 class Program {
 public:
-	Program();
-
 	void findSymbols(std::unique_ptr<Node>& tree);
 	void findDeclarations(std::unique_ptr<Node>& tree);
 
