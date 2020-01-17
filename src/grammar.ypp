@@ -141,9 +141,9 @@ NamespaceItem:
   ;
 
 BasicDeclaration:
-    Attributes ID ':' Type '=' Expression ';' { $$ = std::make_unique<Node>(3, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $1); addChild($$, $4); addChild($$, $6); }
-  | Attributes ID ':' '=' Expression ';'      { $$ = std::make_unique<Node>(3, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $1); addChild($$, $5); }
-  | Attributes ID ':' Type ';'                { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $1); addChild($$, $4); }
+    Attributes ID ':' Type '=' Expression ';' { $$ = std::make_unique<Node>(3, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $4); addChild($$, $6); addChild($$, $1); }
+  | Attributes ID ':' '=' Expression ';'      { $$ = std::make_unique<Node>(3, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $5); addChild($$, $1); }
+  | Attributes ID ':' Type ';'                { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $2; addChild($$, $4); addChild($$, $1); }
   | ID ':' Type '=' Expression ';'            { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
   | ID ':' '=' Expression ';'                 { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $4); }
   | ID ':' Type ';'                           { $$ = std::make_unique<Node>(1, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); }
@@ -166,9 +166,9 @@ FunctionBody:
   ;
 
 ClassDefinition:
-    ID ':' "struct" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $5); addChild($$, $8); }
+    ID ':' "struct" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $8); addChild($$, $5); }
   | ID ':' "struct" ">=>" '{' ClassBody '}'                { $$ = std::make_unique<Node>(1, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $6); }
-  | ID ':' "class" "=>" TupleType ">=>" '{' ClassBody '}'  { $$ = std::make_unique<Node>(2, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $5); addChild($$, $8); }
+  | ID ':' "class" "=>" TupleType ">=>" '{' ClassBody '}'  { $$ = std::make_unique<Node>(2, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $8); addChild($$, $5); }
   | ID ':' "class" ">=>" '{' ClassBody '}'                 { $$ = std::make_unique<Node>(1, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $6); }
   ;
 

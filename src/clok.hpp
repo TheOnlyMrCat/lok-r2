@@ -2,11 +2,14 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <plog/Log.h>
 
 #include "grammar.hpp"
+
+typedef std::pair<std::string, bool> IdPart;
 
 extern std::unique_ptr<Node> parseResult;
 extern std::vector<std::string> strings;
@@ -21,10 +24,12 @@ struct TupleType;
 struct ReturningType;
 
 struct Type {
+	Type();
 	Type(NodePtr& node);
 	Type(Type&&);
-    Type& operator=(Type&&);
 	~Type();
+
+    Type& operator=(Type&&);
 
     int typeType;
     std::unique_ptr<SingleType> basic;
@@ -33,14 +38,18 @@ struct Type {
 };
 
 struct Identifier {
-    Identifier(NodePtr& node);
+	Identifier(NodePtr& node); //! Current implementation requires resolution of types
+	Identifier(std::vector<IdPart> parts);
 
 private:
-    std::vector<strings_t> parts;
+    std::vector<IdPart> parts;
 };
 
 class Symbol {
 public:
+	Symbol(NodePtr& node, bool isType);
+	Symbol(NodePtr& node, bool isType, std::vector<IdPart> prefix);
+
 	std::string toLokConv();
 	std::string toCxxConv();
 	std::string toCConv();
@@ -64,5 +73,5 @@ private:
 	std::vector<Symbol> symbols;
 	std::vector<Decl> declarations;
 
-	void checkSymbol(std::unique_ptr<Node>& node);
+	void _findSymbols(std::unique_ptr<Node>& node, std::vector<IdPart> prefix);
 };

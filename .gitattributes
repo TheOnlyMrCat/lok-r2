@@ -1,8 +1,12 @@
 m4/* linguist-vendored
 *.in linguist-vendored
+lib/* linguist-vendored
 
 compile linguist-vendored
 depcomp linguist-vendored
 missing linguist-vendored
 ylwrap linguist-vendored
 install-sh linguist-vendored
+
+*.ypp linguist-language=Yacc
+*.lpp linguist-language=Lex

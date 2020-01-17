@@ -2,6 +2,10 @@
 
 #include "clok.hpp"
 
+Type::Type() {
+	typeType = -1;
+}
+
 Type::Type(NodePtr& node) {
 	switch (node->type) {
 		case NodeType::TYPESINGLE:
@@ -29,9 +33,11 @@ Type& Type::operator=(Type&&) = default;
 
 Identifier::Identifier(NodePtr& node) {
     for (NodePtr *part = &node->children[0]; (*part)->children.size() > 0; part = &(*part)->children[0]) {
-        parts.push_back((*part)->value.valC);
+        parts.push_back({strings[(*part)->value.valC], false}); //! Requires resolution of types
     }
 }
+
+Identifier::Identifier(std::vector<IdPart> parts): parts(parts) {}
 
 TypeQualifier::TypeQualifier(NodePtr& node) {
 	isPointer = node->type == NodeType::TYPEQUALPTR;
@@ -48,3 +54,15 @@ TupleType::TupleType(NodePtr& node) {
 }
 
 ReturningType::ReturningType(NodePtr& node): input(node->children[0]), output(node->children[1]) {}
+
+Symbol::Symbol(NodePtr& node, bool isType): id({{strings[node->value.valC], isType}}) {
+	if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
+		type = Type(node->children[0]);
+	}
+}
+
+Symbol::Symbol(NodePtr& node, bool isType, std::vector<IdPart> prefix): id((prefix.push_back(std::make_pair(strings[node->value.valC], isType)), prefix)) {
+	if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
+		type = Type(node->children[0]);
+	}
+}
