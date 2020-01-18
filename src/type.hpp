@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "clok.hpp"
+#include "program.hpp"
 
 typedef std::unique_ptr<class Node> NodePtr;
 
@@ -16,7 +17,7 @@ struct TypeQualifier {
 
 class SingleType {
 public:
-    SingleType(NodePtr& node);
+    SingleType(NodePtr& node, ProgramContext& pc);
 
 private:
     Identifier id;
@@ -25,7 +26,7 @@ private:
 
 class TupleType {
 public:
-    TupleType(NodePtr& node);
+    TupleType(NodePtr& node, ProgramContext& pc);
 
 private:
     std::vector<Type> types;
@@ -33,7 +34,7 @@ private:
 
 class ReturningType {
 public:
-    ReturningType(NodePtr& node);
+    ReturningType(NodePtr& node, ProgramContext& pc);
 
 private:
     TupleType input;

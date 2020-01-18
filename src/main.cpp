@@ -3,6 +3,7 @@
 
 #include "clok.hpp"
 #include "bridge.hpp"
+#include "program.hpp"
 
 #include <unordered_map>
 #include <queue>
