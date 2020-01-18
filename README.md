@@ -8,9 +8,9 @@ as possible. For now, snippets of the planned syntax can be seen in the
 
 ## Design
 
-### Philosophies
+### Patterns
 
-The design 'philosophies' (?) I'm using making Lok are ones I think are logical.
+The major design patterns I'm using making Lok are ones I think are logical.
 
 First, the compiler is not allowed to search for identifiers (class names, function names, variable names, etc.)
 when trying to implement functionality. This means that, among other things, exceptions are not able to derive from one

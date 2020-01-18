@@ -137,7 +137,6 @@ FilePath:
 NamespaceItem:
     BasicDeclaration { $$ = std::move($1); }
   | RunDeclaration   { $$ = std::move($1); }
-  | ClassDefinition  { $$ = std::move($1); }
   ;
 
 BasicDeclaration:
@@ -166,10 +165,10 @@ FunctionBody:
   ;
 
 ClassDefinition:
-    ID ':' "struct" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $8); addChild($$, $5); }
-  | ID ':' "struct" ">=>" '{' ClassBody '}'                { $$ = std::make_unique<Node>(1, NodeType::STRUCTDEF, @$); $$->value.valC = $1; addChild($$, $6); }
-  | ID ':' "class" "=>" TupleType ">=>" '{' ClassBody '}'  { $$ = std::make_unique<Node>(2, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $8); addChild($$, $5); }
-  | ID ':' "class" ">=>" '{' ClassBody '}'                 { $$ = std::make_unique<Node>(1, NodeType::CLASSDEF, @$); $$->value.valC = $1; addChild($$, $6); }
+    "struct" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::STRUCTDEF, @$); addChild($$, $6); addChild($$, $3); }
+  | "struct" ">=>" '{' ClassBody '}'                { $$ = std::make_unique<Node>(1, NodeType::STRUCTDEF, @$); addChild($$, $4); }
+  | "class" "=>" TupleType ">=>" '{' ClassBody '}'  { $$ = std::make_unique<Node>(2, NodeType::CLASSDEF, @$); addChild($$, $6); addChild($$, $3); }
+  | "class" ">=>" '{' ClassBody '}'                 { $$ = std::make_unique<Node>(1, NodeType::CLASSDEF, @$); addChild($$, $4); }
   ;
 
 ClassBody:
@@ -402,6 +401,7 @@ BasicExpression:
 BasicValue:
     QualifiedIDWithOperators { $$ = std::move($1); }
   | FuncDefinition           { $$ = std::move($1); }
+  | ClassDefinition			 { $$ = std::move($1); }
   | BasicValueString         { $$ = std::move($1); }
   | INTEGER                  { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
   | FLOAT                    { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
