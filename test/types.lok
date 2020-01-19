@@ -1,4 +1,4 @@
-id := struct >=> {
+i8 := struct >=> {
     new(v: bit[8]) => value = v;
 
     @(explicit) new(v: bit[]) >=> {

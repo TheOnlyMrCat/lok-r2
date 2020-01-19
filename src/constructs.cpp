@@ -2,6 +2,7 @@
 
 #include "clok.hpp"
 #include "program.hpp"
+#include "util.hpp"
 
 Type::Type() {
 	typeType = -1;
@@ -56,13 +57,7 @@ TupleType::TupleType(NodePtr& node, ProgramContext& pc) {
 
 ReturningType::ReturningType(NodePtr& node, ProgramContext& pc): input(node->children[0], pc), output(node->children[1], pc) {}
 
-Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id({{strings[node->value.valC], isType}}) {
-	if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
-		type = Type(node->children[0], pc);
-	}
-}
-
-Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc, std::vector<IdPart> prefix): id((prefix.push_back(std::make_pair(strings[node->value.valC], isType)), prefix)) {
+Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(pc.currentNamespace, {strings[node->value.valC], isType})) {
 	if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
 		type = Type(node->children[0], pc);
 	}
@@ -71,8 +66,8 @@ Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc, std::vector<IdPar
 std::string Symbol::toLokConv() {
 	std::string sb;
 	for (auto i : id.parts) {
-		sb += i.first;
 		sb += '_';
+		sb += i.first;
 	}
 	return sb;
 }

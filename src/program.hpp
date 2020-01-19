@@ -32,7 +32,6 @@ struct Identifier {
 class Symbol {
 public:
 	Symbol(NodePtr& node, bool isType, ProgramContext& pc);
-	Symbol(NodePtr& node, bool isType, ProgramContext& pc, std::vector<IdPart> prefix);
 
 	std::string toLokConv();
 	std::string toCxxConv();
