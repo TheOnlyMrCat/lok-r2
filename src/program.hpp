@@ -26,7 +26,6 @@ struct Identifier {
 	Identifier(NodePtr& node, ProgramContext& context);
 	Identifier(std::vector<IdPart> parts);
 
-private:
     std::vector<IdPart> parts;
 };
 

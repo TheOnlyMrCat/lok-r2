@@ -67,3 +67,12 @@ Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc, std::vector<IdPar
 		type = Type(node->children[0], pc);
 	}
 }
+
+std::string Symbol::toLokConv() {
+	std::string sb;
+	for (auto i : id.parts) {
+		sb += i.first;
+		sb += '_';
+	}
+	return sb;
+}

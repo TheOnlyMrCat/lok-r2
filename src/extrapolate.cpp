@@ -12,6 +12,7 @@ void Program::_findSymbols(std::unique_ptr<Node>& tree) {
 			} else {
 				symbols.emplace_back(node, false, context);
 			}
+			PLOGD << symbols.back().toLokConv();
 		}
 	}
 }
