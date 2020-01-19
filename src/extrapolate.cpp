@@ -1,23 +1,23 @@
 #include "clok.hpp"
 #include "program.hpp"
 
-void Program::_findSymbols(std::unique_ptr<Node>& tree, std::vector<IdPart> prefix) {
+void Program::_findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {
-		if (node->type == NodeType::DECL) symbols.emplace_back(node, false, getContext());
-		else if (node->type == NodeType::CLASSDEF || node->type == NodeType::STRUCTDEF) {
-			prefix.push_back(std::make_pair(strings[node->value.valC], true));
-			_findSymbols(node->children[0], prefix);
-			prefix.pop_back();
+		if (node->type == NodeType::DECL) {
+			if (node->children[0]->type == NodeType::CLASSDEF || node->children[0]->type == NodeType::STRUCTDEF) {
+				context.currentNamespace.push_back(std::make_pair(strings[node->value.valC], true));
+				_findSymbols(node->children[0]->children[0]);
+				context.currentNamespace.pop_back();
+				symbols.emplace_back(node, true, context);
+			} else {
+				symbols.emplace_back(node, false, context);
+			}
 		}
 	}
 }
 
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
-	_findSymbols(tree, {});
-}
-
-ProgramContext& Program::getContext() {
-
+	_findSymbols(tree);
 }
 
 void Program::findDeclarations(std::unique_ptr<Node>& tree) {

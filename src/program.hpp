@@ -50,7 +50,8 @@ public:
 };
 
 struct ProgramContext {
-	std::unordered_map<std::string, Identifier> symbols;
+	std::unordered_map<std::string, Identifier> aliases;
+	std::vector<IdPart> currentNamespace;
 };
 
 class Program {
@@ -58,11 +59,11 @@ public:
 	void findSymbols(std::unique_ptr<Node>& tree);
 	void findDeclarations(std::unique_ptr<Node>& tree);
 
-	ProgramContext& getContext();
-
 private:
 	std::vector<Symbol> symbols;
 	std::vector<Decl> declarations;
 
-	void _findSymbols(std::unique_ptr<Node>& node, std::vector<IdPart> prefix);
+	ProgramContext context;
+
+	void _findSymbols(std::unique_ptr<Node>& node);
 };
