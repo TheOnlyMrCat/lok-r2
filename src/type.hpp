@@ -21,7 +21,7 @@ public:
 
 private:
     Identifier id;
-    TypeQualifier qualifier;
+    std::unique_ptr<TypeQualifier> qualifier;
 };
 
 class TupleType {

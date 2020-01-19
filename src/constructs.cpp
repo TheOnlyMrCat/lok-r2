@@ -47,7 +47,10 @@ TypeQualifier::TypeQualifier(NodePtr& node) {
 	if (node->children[0]->type != NodeType::NONE) nested = std::make_unique<TypeQualifier>(node->children[0]);
 }
 
-SingleType::SingleType(NodePtr& node, ProgramContext& pc): id(node->children[0], pc), qualifier(node->children[1]) {}
+SingleType::SingleType(NodePtr& node, ProgramContext& pc):
+	id(node->children[0], pc),
+	qualifier(node->children[1]->type != NodeType::NONE ? std::make_unique<TypeQualifier>(node->children[1]) : nullptr)
+{}
 
 TupleType::TupleType(NodePtr& node, ProgramContext& pc) {
     for (int i = 0; i < node->children.size(); i++) {
