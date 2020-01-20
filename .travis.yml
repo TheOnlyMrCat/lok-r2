@@ -6,6 +6,8 @@ install:
 - tar -xzf bison-3.5.tar.gz
 - cd bison-3.5; ./configure && make && sudo make install; cd ..
 
+script: ./configure && make && make check && make distcheck
+
 compiler:
 - gcc
 - clang
