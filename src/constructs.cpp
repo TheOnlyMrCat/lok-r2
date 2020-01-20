@@ -33,10 +33,13 @@ Type::~Type() = default;
 Type::Type(Type&&) = default;
 Type& Type::operator=(Type&&) = default;
 
-Identifier::Identifier(NodePtr& node, ProgramContext& context) {
-    for (NodePtr *part = &node->children[0]; (*part)->children.size() > 0; part = &(*part)->children[0]) {
-        parts.push_back({strings[(*part)->value.valC], false}); //! Requires resolution of types
+// Node is expected to be of type QUALID
+Identifier::Identifier(NodePtr& node, ProgramContext& context) : parts(context.currentNamespace) {
+	NodePtr *part;
+    for (part = &node->children[0]; (*part)->children.size() > 0; part = &(*part)->children[0]) {
+        parts.push_back({strings[(*part)->value.valC], false}); //TODO: Resolve types
     }
+	parts.push_back({strings[(*part)->value.valC], false});
 }
 
 Identifier::Identifier(std::vector<IdPart> parts): parts(parts) {}

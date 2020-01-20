@@ -13,6 +13,10 @@ void Program::_findSymbols(std::unique_ptr<Node>& tree) {
 				symbols.emplace_back(node, false, context);
 			}
 			PLOGD << symbols.back().toLokConv();
+		} else if (node->type == NodeType::NAMESPACE) {
+			context.currentNamespace = Identifier(node->children[0], context).parts;
+			_findSymbols(node->children[1]);
+			context.currentNamespace.clear();
 		}
 	}
 }
