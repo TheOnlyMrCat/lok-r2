@@ -17,3 +17,5 @@ lexer.cpp
 
 *.o
 *.ast
+*.log
+*.trs

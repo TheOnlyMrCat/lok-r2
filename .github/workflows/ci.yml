@@ -1,0 +1,19 @@
+name: C++ CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Configure environment
+      run: ./configure
+    - name: Compile
+      run: make
+    - name: Test
+      run: make check
+    - name: Check distribution
+      run: make distcheck

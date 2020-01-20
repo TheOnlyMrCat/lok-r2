@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([clok], [0.1], [none])
+AC_INIT([clok], [0.1], [TheOnlyMrCat])
 AC_CONFIG_SRCDIR([lib/cxxopts.hpp])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])

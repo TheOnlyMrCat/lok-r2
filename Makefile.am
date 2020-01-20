@@ -10,6 +10,10 @@ clok_CPPFLAGS = -Ilib
 clok_CXXFLAGS = -Wno-deprecated-register
 clok_LDADD = $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB)
 
+TESTS = test/functions.lok test/expressions.lok test/load.lok test/statements.lok test/types.lok
+TEST_EXTENSIONS = .lok
+LOK_LOG_COMPILER = ./clok
+
 src/nodetypenames.h: src/nodetypenames.txt
 	xxd -i src/nodetypenames.txt > src/nodetypenames.h
 
