@@ -36,21 +36,21 @@ enum class NodeType {
 };
 
 union ValueType {
-	long long valI;
-	double valF;
-	strings_t valC;
+    long long valI;
+    double valF;
+    strings_t valC;
 };
 
 struct Node {
-	Node(int initialChildren, NodeType type, yy::parser::location_type loc) : type(type), location(loc) {
+    Node(int initialChildren, NodeType type, yy::parser::location_type loc) : type(type), location(loc) {
     children.reserve(initialChildren);
   }
 
-	NodeType type;
-	union ValueType value;
+    NodeType type;
+    union ValueType value;
   yy::parser::location_type location;
 
-	std::vector<std::unique_ptr<Node>> children;
+    std::vector<std::unique_ptr<Node>> children;
 };
 }
 
@@ -71,10 +71,10 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
 
-%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class"
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace"
 
 %type <strings_t> PrefixOperator PostfixOperator CompAssignOperator
-%type <NodePtr> LoadStatement FileLocator FilePath NamespaceItem RunDeclaration ClassItem ClassBody
+%type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
 %type <NodePtr> Attributes AttributeList
 %type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign
@@ -116,13 +116,18 @@ struct Node {
 %%
 root:
     %empty
-  | root LoadStatement { addChild(parseResult, $2); }
-  | root NamespaceItem { addChild(parseResult, $2); }
+  | root LoadStatement 	     { addChild(parseResult, $2); }
+  | root NamespaceStatement  { addChild(parseResult, $2); }
+  | root NamespaceItem 	     { addChild(parseResult, $2); }
+  | root "namespace" '(' ')' { }
   ;
 
 LoadStatement:
     "load" '(' FileLocator ')' { $$ = std::make_unique<Node>(1, NodeType::LOAD, @$); addChild($$, $3); }
   ;
+
+NamespaceStatement:
+    "namespace" '(' QualifiedID ')' NamespaceItems { $$ = std::make_unique<Node>(1, NodeType::NAMESPACE, @$); addChild($$, $3); addChild($$, $5); }
 
 FileLocator:
     FilePath                 { $$ = std::make_unique<Node>(1, NodeType::NONE, @$); addChild($$, $1); }
@@ -132,6 +137,11 @@ FileLocator:
 FilePath:
     ID              { $$ = std::make_unique<Node>(0, NodeType::FILEPATH, @$); $$->value.valC = $1; }
   | ID '/' FilePath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
+  ;
+
+NamespaceItems:
+    %empty                       { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
+  | NamespaceItems NamespaceItem { $$ = std::move($1); addChild($$, $2); }
   ;
 
 NamespaceItem:

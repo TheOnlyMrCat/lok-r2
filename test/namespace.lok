@@ -1,0 +1,21 @@
+namespace(foo)
+
+a := 5;
+
+namespace(foo.bar)
+
+b := (in: i32) -> i32 => in + 1;
+
+namespace(baz)
+
+c := class >=> {
+	new(v: i32) >=> {
+		value = v;
+	}
+
+	value: i32;
+};
+
+namespace()
+
+global: string = "Hello, world.";
