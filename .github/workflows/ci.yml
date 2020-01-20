@@ -10,14 +10,9 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Get Bison
-      run:
-      - wget https://mirror.freedif.org/GNU/bison/bison-3.5.tar.gz
-      - tar -xzf bison-3.5.tar.gz
-      - cd bison-3.5; ./configure && make && sudo make install; cd ..
+      run: wget https://mirror.freedif.org/GNU/bison/bison-3.5.tar.gz; tar -xzf bison-3.5.tar.gz; cd bison-3.5; ./configure && make && sudo make install; cd ..
     - name: Configure environment
-      run:
-      - touch configure aclocal.m4 Makefile.in
-      - ./configure
+      run: touch configure aclocal.m4 Makefile.in; ./configure
     - name: Compile
       run: make
     - name: Test
