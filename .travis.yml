@@ -1,4 +1,5 @@
 language: cpp
+dist: bionic
 
 install:
 - touch configure aclocal.m4 Makefile.in
@@ -17,4 +18,4 @@ addons:
     packages:
     - m4
     - flex
-    - libboost-filesystem1.58-dev
+    - libboost-filesystem-dev
