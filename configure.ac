@@ -43,7 +43,7 @@ AC_CHECK_FUNCS([gettimeofday memset mkdir strdup strerror strstr strtol])
 
 # Checks some stuff?
 AX_CXX_COMPILE_STDCXX([14])
-AX_BOOST_BASE([1.60.0], [], [AC_ERROR()])
+AX_BOOST_BASE([1.56.0], [], [AC_ERROR()])
 AX_BOOST_SYSTEM
 AX_BOOST_FILESYSTEM
 
