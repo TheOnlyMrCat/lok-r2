@@ -118,7 +118,8 @@ int main(int argc, char *argv[]) {
 	std::unordered_map<std::string, std::unique_ptr<Node>> syntaxes;
 
 	while (!lokFiles.empty()) {
-		std::string filename = lokFiles.front().c_str();
+		bfs::path path = lokFiles.front();
+		std::string filename = path.c_str();
 		lokFiles.pop();
 
 		PLOGI << "Parsing file " << filename;
@@ -131,7 +132,8 @@ int main(int argc, char *argv[]) {
 			dumpAST(syntaxes[filename], astFile);
 			continue;
 		}
-		bfs::path workingDir = bfs::path(filename).parent_path();
+
+		bfs::path workingDir = path.parent_path();
 
 		for (auto& node : syntaxes[filename]->children) {
 			if (node->type == NodeType::LOAD) {
@@ -162,7 +164,7 @@ int main(int argc, char *argv[]) {
 
 	for (auto& syntax : syntaxes) {
 		PLOGI << "Extrapolating types for " << syntax.first;
-		programs[syntax.first].findDeclarations(syntax.second);
+		programs[syntax.first].extrapolate(syntax.second);
 	}
 }
 

@@ -55,7 +55,7 @@ struct ProgramContext {
 class Program {
 public:
 	void findSymbols(std::unique_ptr<Node>& tree);
-	void findDeclarations(std::unique_ptr<Node>& tree);
+	void extrapolate(std::unique_ptr<Node>& tree);
 
 private:
 	std::vector<Symbol> symbols;
@@ -63,5 +63,5 @@ private:
 
 	ProgramContext context;
 
-	void _findSymbols(std::unique_ptr<Node>& node);
+	void _extrapolate(std::unique_ptr<Node>& node);
 };
