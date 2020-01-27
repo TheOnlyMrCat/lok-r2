@@ -30,7 +30,6 @@ int column;
 run/[^A-Za-z0-9_]       { return yy::parser::make_RUNK(lok); }
 load/[^A-Za-z0-9_]      { return yy::parser::make_LOADK(lok); }
 if/[^A-Za-z0-9_]        { return yy::parser::make_IFK(lok); }
-else/[^A-Za-z0-9_]      { return yy::parser::make_ELSEK(lok); }
 for/[^A-Za-z0-9_]       { return yy::parser::make_FORK(lok); }
 while/[^A-Za-z0-9_]     { return yy::parser::make_WHILEK(lok); }
 new/[^A-Za-z0-9_]       { return yy::parser::make_NEWK(lok); }
@@ -38,17 +37,19 @@ struct/[^A-Za-z0-9_]    { return yy::parser::make_STRUCTK(lok); }
 class/[^A-Za-z0-9_]     { return yy::parser::make_CLASSK(lok); }
 namespace/[^A-Za-z0-9_] { return yy::parser::make_NAMESPACEK(lok); }
 
+else/(if[^A-Za-z0-9_]|[^A-Za-z0-9_]) { return yy::parser::make_ELSEK(lok); }
+
 [A-Za-z_][A-Za-z0-9_]* { return yy::parser::make_ID(getString(yytext), lok); }
 
-[+-]?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point with decimal point
-[+-]?0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point with decimal point
-[+-]?[0-9]+[eE][+-]?[:digit]+f?                                { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point with exponent
-[+-]?0[xX][0-9A-Fa-f]+[pP][+-]?[0-9A-Fa-f]+f?                  { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point with exponent
-[+-]?[0-9]+f                                                   { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point integer
-[+-]?0[xX][0-9]+f                                              { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point integer
+[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?f?                        { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point with decimal point
+0[xX][0-9A-Fa-f]+\.[0-9A-Fa-f]+([pP][+-]?[0-9A-Fa-f]+)?f? { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point with decimal point
+[0-9]+[eE][+-]?[:digit]+f?                                { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point with exponent
+0[xX][0-9A-Fa-f]+[pP][+-]?[0-9A-Fa-f]+f?                  { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point with exponent
+[0-9]+f                                                   { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Decimal floating point integer
+0[xX][0-9]+f                                              { return yy::parser::make_FLOAT(strtod(yytext, NULL), lok); } // Hex floating point integer
 
-[+-]?[0-9]+            { return yy::parser::make_INTEGER(strtol(yytext, NULL, 10), lok); } // Decimal integer literal
-[+-]?0[xX][0-9A-Fa-f]+ { return yy::parser::make_INTEGER(strtol(yytext, NULL, 16), lok); } // Hex integer literal
+[0-9]+            { return yy::parser::make_INTEGER(strtol(yytext, NULL, 10), lok); } // Decimal integer literal
+0[xX][0-9A-Fa-f]+ { return yy::parser::make_INTEGER(strtol(yytext, NULL, 16), lok); } // Hex integer literal
 
 \'\\x[0-9A-Fa-f]{2}\' { return yy::parser::make_CHAR(strtol(yytext + (3 * sizeof(char)), 0, 16), lok); }
 \'\\u[0-9A-Fa-f]{4}\' { return yy::parser::make_CHAR(strtol(yytext + (3 * sizeof(char)), 0, 16), lok); }

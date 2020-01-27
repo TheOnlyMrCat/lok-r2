@@ -70,6 +70,7 @@ Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(
 }
 
 std::string Symbol::toLokConv() {
+	//TODO
 	std::string sb;
 	for (auto i : id.parts) {
 		sb += '_';

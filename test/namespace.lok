@@ -6,9 +6,15 @@ namespace(foo.bar)
 
 b := (in: i32) -> i32 => in + 1;
 
+c := (ina: i32, inb: i32) -> i32 >=> {
+	ina += inb;
+	inb += ina;
+	return (ina - inb);
+};
+
 namespace(baz)
 
-c := class >=> {
+d := class >=> {
 	new(v: i32) >=> {
 		value = v;
 	}

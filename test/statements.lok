@@ -1,4 +1,4 @@
-run 0 () >=> {
+run[0] () >=> {
     a: bit = 1;
     b := 32;
 
@@ -21,7 +21,7 @@ run 0 () >=> {
 
 load(std::io)
 
-run 1 () >=> {
+run[1] () >=> {
     // Declaration, Expression, Expression
     for (i := 0; i <= 10; i++) => std.out.println(i);
 
@@ -31,7 +31,7 @@ run 1 () >=> {
     }
 }
 
-run 2 () >=> {
+run[2] () >=> {
     doContinue := true;
 
     while (doContinue) {
