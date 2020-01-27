@@ -1,5 +1,4 @@
 language: cpp
-dist: bionic
 
 install:
 - touch configure aclocal.m4 Makefile.in
