@@ -12,15 +12,15 @@ Type::Type(NodePtr& node, ProgramContext& pc) {
 	switch (node->type) {
 		case NodeType::TYPESINGLE:
 			typeType = 0;
-			basic = std::make_unique<SingleType>(node, pc);
+			basic = val::value_ptr<SingleType>(SingleType(node, pc));
 			break;
 		case NodeType::TYPEMULTI:
 			typeType = 1;
-			tuple = std::make_unique<TupleType>(node, pc);
+			tuple = val::value_ptr<TupleType>(TupleType(node, pc));
 			break;
 		case NodeType::TYPEFN:
 			typeType = 2;
-			func = std::make_unique<ReturningType>(node, pc);
+			func = val::value_ptr<ReturningType>(ReturningType(node, pc));
 			break;
 		default:
 			PLOGF << "I sincerely hope that this never happens";
@@ -30,6 +30,7 @@ Type::Type(NodePtr& node, ProgramContext& pc) {
 
 Type::~Type() = default;
 
+Type::Type(const Type&) = default;
 Type::Type(Type&&) = default;
 Type& Type::operator=(Type&&) = default;
 
@@ -47,12 +48,12 @@ Identifier::Identifier(std::vector<IdPart> parts): parts(parts) {}
 TypeQualifier::TypeQualifier(NodePtr& node) {
 	isPointer = node->type == NodeType::TYPEQUALPTR;
 	if (node->type == NodeType::TYPEQUALARR) arraySize = node->value.valI;
-	if (node->children[0]->type != NodeType::NONE) nested = std::make_unique<TypeQualifier>(node->children[0]);
+	if (node->children[0]->type != NodeType::NONE) nested = val::value_ptr<TypeQualifier>(node->children[0]);
 }
 
 SingleType::SingleType(NodePtr& node, ProgramContext& pc):
 	id(node->children[0], pc),
-	qualifier(node->children[1]->type != NodeType::NONE ? std::make_unique<TypeQualifier>(node->children[1]) : nullptr)
+	qualifier(node->children[1]->type != NodeType::NONE ? val::value_ptr<TypeQualifier>(node->children[1]) : val::value_ptr<TypeQualifier>(nullptr))
 {}
 
 TupleType::TupleType(NodePtr& node, ProgramContext& pc) {
@@ -68,6 +69,10 @@ Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(
 		type = Type(node->children[0], pc);
 	}
 }
+
+Expr::Expr(Type t): type(t) {}
+
+OpExpr::OpExpr(Type t, val::value_ptr<Expr> l, val::value_ptr<Expr> r, std::string o): Expr(t), left(std::move(l)), right(std::move(r)), op(o) {}
 
 std::string Symbol::toLokConv() {
 	//TODO

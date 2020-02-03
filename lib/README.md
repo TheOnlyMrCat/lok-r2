@@ -14,3 +14,7 @@ Portable, simple and extensible C++ logging library ([Link to repository](https:
 ### jarro2783/cxxopts
 
 Lightweight C++ command line option parser ([Link to repository](https://github.com/jarro2783/cxxopts))
+
+### LoopPerfect/valuable
+
+A C++ smart-pointer with value-semantics ([Link to repository](https://github.com/LoopPerfect/valuable))

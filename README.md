@@ -24,5 +24,8 @@ you must be able to remove all bytes `0x09`, `0x0A` and `0x20` and have it funct
 necessarily mean you are able to insert whitespace anywhere in the code and have it function, but you must be able to remove
 whitespace that is there.
 
+Single-line comments are an exception to this rule. They are allowed to exist without closing syntax, and the test function
+will remove single-line comments.
+
 Both of these design choices introduce challenges into creating the syntax and systems, notably the whitespace one because
 I have to define separators in place of whitespace where whitespace would be necessary.

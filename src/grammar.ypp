@@ -74,6 +74,7 @@ struct Node {
 %token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace"
 
 %type <long long> BasicValueInt
+%type <double> BasicValueFloat
 %type <strings_t> PrefixOperator PostfixOperator CompAssignOperator
 %type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
@@ -417,10 +418,10 @@ BasicExpression:
 BasicValue:
     QualifiedIDWithOperators { $$ = std::move($1); }
   | FuncDefinition           { $$ = std::move($1); }
-  | ClassDefinition			 { $$ = std::move($1); }
+  | ClassDefinition			     { $$ = std::move($1); }
   | BasicValueString         { $$ = std::move($1); }
   | BasicValueInt            { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
-  | FLOAT                    { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
+  | BasicValueFloat          { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
   | CHAR                     { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valC = $1; }
   ;
 
@@ -432,6 +433,12 @@ BasicValueInt:
     INTEGER     { $$ = $1; }
   | '+' INTEGER { $$ = $2; }
   | '-' INTEGER { $$ = -$2; }
+  ;
+
+BasicValueFloat:
+    FLOAT     { $$ = $1; }
+  | '+' FLOAT { $$ = $2; }
+  | '-' FLOAT { $$ = -$2; }
   ;
 
 PrefixOperator:

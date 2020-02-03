@@ -2,6 +2,9 @@
 
 #include "clok.hpp"
 
+#include <valuable/value-ptr.hpp>
+namespace val=valuable;
+
 struct SingleType;
 struct TupleType;
 struct ReturningType;
@@ -12,14 +15,15 @@ struct Type {
 	Type();
 	Type(NodePtr& node, ProgramContext& pc);
 	Type(Type&&);
+	Type(const Type&);
 	~Type();
 
     Type& operator=(Type&&);
 
     int typeType;
-    std::unique_ptr<SingleType> basic;
-    std::unique_ptr<TupleType> tuple;
-    std::unique_ptr<ReturningType> func;
+    val::value_ptr<SingleType> basic;
+    val::value_ptr<TupleType> tuple;
+    val::value_ptr<ReturningType> func;
 };
 
 struct Identifier {
@@ -47,6 +51,35 @@ public:
 	virtual ~Decl();
 };
 
+class Expr {
+public:
+	Expr(Type);
+	virtual ~Expr();
+	Type type;
+};
+
+class OpExpr : public Expr {
+public:
+	OpExpr(Type, val::value_ptr<Expr>, val::value_ptr<Expr>, std::string);
+
+	val::value_ptr<Expr> left;
+	val::value_ptr<Expr> right;
+	std::string op;
+};
+
+class AssigExpr : public Expr {
+public:
+	Symbol variable;
+	std::unique_ptr<Expr> right;
+};
+
+class CompAssigExpr : public Expr {
+public:
+	Symbol variable;
+	std::unique_ptr<Expr> right;
+	std::string op;
+};
+
 struct ProgramContext {
 	std::unordered_map<std::string, Identifier> aliases;
 	std::vector<IdPart> currentNamespace;
@@ -63,5 +96,5 @@ private:
 
 	ProgramContext context;
 
-	void _extrapolate(std::unique_ptr<Node>& node);
+	std::unique_ptr<Expr> _extrapolate(std::unique_ptr<Node>& node);
 };

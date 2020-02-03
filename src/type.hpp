@@ -5,12 +5,15 @@
 #include "clok.hpp"
 #include "program.hpp"
 
+#include <valuable/value-ptr.hpp>
+namespace val=valuable;
+
 typedef std::unique_ptr<class Node> NodePtr;
 
 struct TypeQualifier {
 	TypeQualifier(NodePtr& node);
 
-	std::unique_ptr<TypeQualifier> nested;
+	val::value_ptr<TypeQualifier> nested;
 	bool isPointer;
 	int arraySize;
 };
@@ -21,7 +24,7 @@ public:
 
 private:
     Identifier id;
-    std::unique_ptr<TypeQualifier> qualifier;
+    val::value_ptr<TypeQualifier> qualifier;
 };
 
 class TupleType {
