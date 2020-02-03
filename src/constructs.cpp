@@ -71,8 +71,13 @@ Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(
 }
 
 Expr::Expr(Type t): type(t) {}
+Expr::~Expr() = default;
 
-OpExpr::OpExpr(Type t, val::value_ptr<Expr> l, val::value_ptr<Expr> r, std::string o): Expr(t), left(std::move(l)), right(std::move(r)), op(o) {}
+OpExpr::OpExpr(Type t, Expr *l, Expr *r, std::string o): Expr(t), left(std::move(l)), right(std::move(r)), op(o) {}
+OpExpr::~OpExpr() {
+	delete left;
+	delete right;
+}
 
 std::string Symbol::toLokConv() {
 	//TODO

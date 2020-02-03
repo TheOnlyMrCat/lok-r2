@@ -22,11 +22,17 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 }
 
 // node is expected to be one of the EXPR node types
-std::unique_ptr<Expr> Program::_extrapolate(std::unique_ptr<Node>& node) {
+Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 	switch (node->type) {
-		case NodeType::EXPRBASIC:
-			//TODO type checking
-			return std::make_unique<OpExpr>(_extrapolate(node->children[0]), _extrapolate(node->children[1]), strings[node->value.valC]);
+		case NodeType::EXPRBASIC: {
+			Expr *left = _extrapolate(node->children[0]);
+			Expr *right = _extrapolate(node->children[1]);
+			Type type = left->type; //TODO check operator overloads
+			return new OpExpr(type, left, right, strings[node->value.valC]);
+		}
+		default:
+			PLOGF << "Unhandled expression type";
+			exit(EXIT_FAILURE);
 	}
 }
 

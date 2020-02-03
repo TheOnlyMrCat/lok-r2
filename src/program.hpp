@@ -60,23 +60,24 @@ public:
 
 class OpExpr : public Expr {
 public:
-	OpExpr(Type, val::value_ptr<Expr>, val::value_ptr<Expr>, std::string);
+	OpExpr(Type, Expr*, Expr*, std::string);
+	~OpExpr() override;
 
-	val::value_ptr<Expr> left;
-	val::value_ptr<Expr> right;
+	Expr *left;
+	Expr *right;
 	std::string op;
 };
 
 class AssigExpr : public Expr {
 public:
 	Symbol variable;
-	std::unique_ptr<Expr> right;
+	Expr *right;
 };
 
 class CompAssigExpr : public Expr {
 public:
 	Symbol variable;
-	std::unique_ptr<Expr> right;
+	Expr *right;
 	std::string op;
 };
 
@@ -96,5 +97,5 @@ private:
 
 	ProgramContext context;
 
-	std::unique_ptr<Expr> _extrapolate(std::unique_ptr<Node>& node);
+	Expr *_extrapolate(std::unique_ptr<Node>& node);
 };
