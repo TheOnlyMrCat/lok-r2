@@ -18,3 +18,4 @@ jobs:
     - name: Compile
       run: make
     - name: Test
+      run: make check
