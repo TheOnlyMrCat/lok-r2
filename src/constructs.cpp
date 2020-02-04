@@ -28,6 +28,10 @@ Type::Type(NodePtr& node, ProgramContext& pc) {
 	}
 }
 
+Type::Type(SingleType t): typeType(0), basic(t) {}
+Type::Type(TupleType t): typeType(1), tuple(t) {}
+Type::Type(ReturningType t): typeType(2), func(t) {}
+
 Type::~Type() = default;
 
 Type::Type(const Type&) = default;
@@ -51,10 +55,16 @@ TypeQualifier::TypeQualifier(NodePtr& node) {
 	if (node->children[0]->type != NodeType::NONE) nested = val::value_ptr<TypeQualifier>(node->children[0]);
 }
 
+TypeQualifier::TypeQualifier(bool b, int i): isPointer(b), arraySize(i) {}
+TypeQualifier::TypeQualifier(bool b, int i, TypeQualifier f): isPointer(b), arraySize(i), nested(f) {}
+
 SingleType::SingleType(NodePtr& node, ProgramContext& pc):
 	id(node->children[0], pc),
 	qualifier(node->children[1]->type != NodeType::NONE ? val::value_ptr<TypeQualifier>(node->children[1]) : val::value_ptr<TypeQualifier>(nullptr))
 {}
+
+SingleType::SingleType(Identifier i, TypeQualifier q): id(i), qualifier(q) {}
+SingleType::SingleType(Identifier i): id(i) {}
 
 TupleType::TupleType(NodePtr& node, ProgramContext& pc) {
     for (int i = 0; i < node->children.size(); i++) {
@@ -62,13 +72,18 @@ TupleType::TupleType(NodePtr& node, ProgramContext& pc) {
     }
 }
 
+TupleType::TupleType(std::vector<Type> ts): types(ts) {}
+
 ReturningType::ReturningType(NodePtr& node, ProgramContext& pc): input(node->children[0], pc), output(node->children[1], pc) {}
+ReturningType::ReturningType(TupleType i, Type o): input(i), output(o) {}
 
 Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(pc.currentNamespace, {strings[node->value.valC], isType})) {
 	if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
 		type = Type(node->children[0], pc);
 	}
 }
+
+Symbol::Symbol(Type t, Identifier i): type(t), id(i) {}
 
 Expr::Expr(Type t): type(t) {}
 Expr::~Expr() = default;
@@ -78,6 +93,9 @@ OpExpr::~OpExpr() {
 	delete left;
 	delete right;
 }
+
+IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", false}}), TypeQualifier(false, size))), value(val) {}
+FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", false}}), TypeQualifier(false, size))), value(val) {}
 
 std::string Symbol::toLokConv() {
 	//TODO

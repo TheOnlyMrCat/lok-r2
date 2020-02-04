@@ -12,6 +12,8 @@ typedef std::unique_ptr<class Node> NodePtr;
 
 struct TypeQualifier {
 	TypeQualifier(NodePtr& node);
+    TypeQualifier(bool, int);
+    TypeQualifier(bool, int, TypeQualifier);
 
 	val::value_ptr<TypeQualifier> nested;
 	bool isPointer;
@@ -21,6 +23,8 @@ struct TypeQualifier {
 class SingleType {
 public:
     SingleType(NodePtr& node, ProgramContext& pc);
+    SingleType(Identifier, TypeQualifier);
+    SingleType(Identifier);
 
 private:
     Identifier id;
@@ -30,6 +34,7 @@ private:
 class TupleType {
 public:
     TupleType(NodePtr& node, ProgramContext& pc);
+    TupleType(std::vector<Type>);
 
 private:
     std::vector<Type> types;
@@ -38,6 +43,7 @@ private:
 class ReturningType {
 public:
     ReturningType(NodePtr& node, ProgramContext& pc);
+    ReturningType(TupleType, Type);
 
 private:
     TupleType input;

@@ -2,6 +2,7 @@
 
 [![Build Status](https://img.shields.io/travis/TheOnlyMrCat/lok?logo=travis)](https://travis-ci.org/TheOnlyMrCat/lok)
 ![Build Status](https://img.shields.io/github/workflow/status/TheOnlyMrCat/lok/C++%20CI?logo=github)
+[![Discord server](https://img.shields.io/discord/674174065761583104?logo=discord&logoColor=white)](https://discord.gg/nNu3GSs)
 
 This is a compiler for a programming language I am making called lok. Its goal is to have its syntax be as logical
 as possible. For now, snippets of the planned syntax can be seen in the

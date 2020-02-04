@@ -16,6 +16,9 @@ struct Type {
 	Type(NodePtr& node, ProgramContext& pc);
 	Type(Type&&);
 	Type(const Type&);
+	Type(SingleType);
+	Type(TupleType);
+	Type(ReturningType);
 	~Type();
 
     Type& operator=(Type&&);
@@ -36,6 +39,7 @@ struct Identifier {
 class Symbol {
 public:
 	Symbol(NodePtr& node, bool isType, ProgramContext& pc);
+	Symbol(Type, Identifier);
 
 	std::string toLokConv();
 	std::string toCxxConv();
@@ -79,6 +83,20 @@ public:
 	Symbol variable;
 	Expr *right;
 	std::string op;
+};
+
+class IntValue : public Expr {
+public:
+	IntValue(long long, int);
+
+	long long value;
+};
+
+class FloatValue : public Expr {
+public:
+	FloatValue(double, int);
+
+	double value;
 };
 
 struct ProgramContext {

@@ -1,5 +1,6 @@
 #include "clok.hpp"
 #include "program.hpp"
+#include "type.hpp"
 
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {
@@ -13,6 +14,10 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 				symbols.emplace_back(node, false, context);
 			}
 			PLOGD << symbols.back().toLokConv();
+		} else if (node->type == NodeType::CTORDEF) {
+			auto ctorname = std::vector<IdPart>(context.currentNamespace);
+			ctorname.emplace_back("new", false);
+			symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], context).parts;
 			findSymbols(node->children[1]);
@@ -30,6 +35,10 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 			Type type = left->type; //TODO check operator overloads
 			return new OpExpr(type, left, right, strings[node->value.valC]);
 		}
+		case NodeType::VALINT:
+			return new IntValue(node->value.valI, 64);
+		case NodeType::VALFLOAT:
+			return new FloatValue(node->value.valF, 64);
 		default:
 			PLOGF << "Unhandled expression type";
 			exit(EXIT_FAILURE);
