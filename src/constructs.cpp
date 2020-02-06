@@ -74,7 +74,11 @@ TupleType::TupleType(NodePtr& node, ProgramContext& pc) {
 
 TupleType::TupleType(std::vector<Type> ts): types(ts) {}
 
-ReturningType::ReturningType(NodePtr& node, ProgramContext& pc): input(node->children[0], pc), output(node->children[1], pc) {}
+ReturningType::ReturningType(NodePtr& node, ProgramContext& pc):
+	input(node->children[0], pc),
+	output(node->children.size() > 1 ? Type(node->children[1], pc) : Type())
+{}
+
 ReturningType::ReturningType(TupleType i, Type o): input(i), output(o) {}
 
 Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(pc.currentNamespace, {strings[node->value.valC], isType})) {

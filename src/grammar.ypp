@@ -327,6 +327,7 @@ TupleTypes:
 
 FunctionType:
     TupleType "->" Type { $$ = std::make_unique<Node>(2, NodeType::TYPEFN, @$); addChild($$, $1); addChild($$, $3); }
+  | TupleType "->"      { $$ = std::make_unique<Node>(1, NodeType::TYPEFN, @$); addChild($$, $1); }
   ;
 
 BlockStatement:
