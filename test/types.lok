@@ -2,8 +2,17 @@ i8 := struct >=> {
     new(v: bit[8]) => value = v;
 
     @(explicit) new(v: bit[]) >=> {
+        // This constructor doesn't do anything
+    };
 
-    }
+    operator+ (left: i8, right: i8) -> i8 >=> {
+        newVal: bit[8];
+        c: bit;
+        for (i := 7; i >= 0; i--) {
+            c = left[i] & right[i] & c;
+            newVal[i] = left[i] ^ right[i] ^ c;
+        }
+    };
 
     value: bit[8];
 };

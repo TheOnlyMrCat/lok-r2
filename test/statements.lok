@@ -17,7 +17,7 @@ run[0] () >=> {
     } else {
         b = 42;
     }
-}
+};
 
 load(std::io)
 
@@ -29,12 +29,12 @@ run[1] () >=> {
     for (x := 0; x < 5; x++) {
         std.out.printfln("%d, %d", x, y);
     }
-}
+};
 
 run[2] () >=> {
     doContinue := true;
 
     while (doContinue) {
-        continue = false;
+        doContinue = false;
     }
-}
+};

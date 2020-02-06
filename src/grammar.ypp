@@ -71,7 +71,7 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
 
-%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace"
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace" DELETEK "delete" OPERATORK "operator"
 
 %type <long long> BasicValueInt
 %type <double> BasicValueFloat
@@ -79,7 +79,7 @@ struct Node {
 %type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
 %type <NodePtr> Attributes AttributeList
-%type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign
+%type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign DtorDefinition OpOverload
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
 %type <NodePtr> BlockStatement Statements Statement
 %type <NodePtr> IfStatement ForStatement ForArguments WhileStatement ReturnStatement
@@ -161,8 +161,8 @@ BasicDeclaration:
   ;
 
 RunDeclaration:
-    "run" FuncDefinition                 { $$ = std::make_unique<Node>(1, NodeType::RUN, @$); addChild($$, $2); $$->value.valI = -1; }
-  | "run" '[' INTEGER ']' FuncDefinition { $$ = std::make_unique<Node>(1, NodeType::RUN, @$); addChild($$, $5); $$->value.valI = $3; }
+    "run" FuncDefinition ';'                 { $$ = std::make_unique<Node>(1, NodeType::RUN, @$); addChild($$, $2); $$->value.valI = -1; }
+  | "run" '[' INTEGER ']' FuncDefinition ';' { $$ = std::make_unique<Node>(1, NodeType::RUN, @$); addChild($$, $5); $$->value.valI = $3; }
   ;
 
 FuncDefinition:
@@ -191,15 +191,17 @@ ClassBody:
 ClassItem:
     BasicDeclaration { $$ = std::move($1); }
   | CtorDefinition   { $$ = std::move($1); }
+  | DtorDefinition   { $$ = std::move($1); }
+  | OpOverload       { $$ = std::move($1); }
   ;
 
 CtorDefinition:
-    Attributes "new" Parameters "=>" CtorInit ">=>" FunctionBody { $$ = std::make_unique<Node>(4, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); addChild($$, $7); }
-  | Attributes "new" Parameters ">=>" FunctionBody               { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); }
-  | Attributes "new" Parameters "=>" CtorInit ';'                { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); }
-  | "new" Parameters "=>" CtorInit ">=>" FunctionBody            { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); addChild($$, $6); }
-  | "new" Parameters ">=>" FunctionBody                          { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
-  | "new" Parameters "=>" CtorInit ';'                           { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
+    Attributes "new" Parameters "=>" CtorInit ">=>" FunctionBody ';' { $$ = std::make_unique<Node>(4, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); addChild($$, $7); }
+  | Attributes "new" Parameters ">=>" FunctionBody ';'               { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); }
+  | Attributes "new" Parameters "=>" CtorInit ';'                    { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $1); addChild($$, $3); addChild($$, $5); }
+  | "new" Parameters "=>" CtorInit ">=>" FunctionBody ';'            { $$ = std::make_unique<Node>(3, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); addChild($$, $6); }
+  | "new" Parameters ">=>" FunctionBody ';'                          { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
+  | "new" Parameters "=>" CtorInit ';'                               { $$ = std::make_unique<Node>(2, NodeType::CTORDEF, @$); addChild($$, $2); addChild($$, $4); }
   ;
 
 CtorInit:
@@ -209,6 +211,56 @@ CtorInit:
 
 CtorAssign:
     ID '=' BasicExpression { $$ = std::make_unique<Node>(1, NodeType::EXPRASSIG, @$); $$->value.valC = $1; addChild($$, $3); }
+  ;
+
+DtorDefinition:
+    Attributes "delete" ">=>" FunctionBody { $$ = std::make_unique<Node>(2, NodeType::DTORDEF, @$); addChild($$, $4); addChild($$, $1); }
+  | "delete" ">=>" FunctionBody            { $$ = std::make_unique<Node>(1, NodeType::DTORDEF, @$); addChild($$, $3); }
+  ;
+
+OpOverload:
+    Attributes "operator" '+' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("+"); addChild($$, $1); }
+  | Attributes "operator" '-' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("-"); addChild($$, $1); }
+  | Attributes "operator" '*' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("*"); addChild($$, $1); }
+  | Attributes "operator" '/' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("/"); addChild($$, $1); }
+  | Attributes "operator" '%' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("%"); addChild($$, $1); }
+  | Attributes "operator" '&' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("&"); addChild($$, $1); }
+  | Attributes "operator" '|' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("|"); addChild($$, $1); }
+  | Attributes "operator" '^' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("^"); addChild($$, $1); }
+  | Attributes "operator" ">>" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString(">>"); addChild($$, $1); }
+  | Attributes "operator" "<<" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("<<"); addChild($$, $1); }
+  | Attributes "operator" ">>>" FuncDefinition ';' { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString(">>>"); addChild($$, $1); }
+  | Attributes "operator" "&&" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("&&"); addChild($$, $1); }
+  | Attributes "operator" "||" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("||"); addChild($$, $1); }
+  | Attributes "operator" "^^" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("^^"); addChild($$, $1); }
+  | Attributes "operator" "==" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("=="); addChild($$, $1); }
+  | Attributes "operator" "!=" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("!="); addChild($$, $1); }
+  | Attributes "operator" '>' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString(">"); addChild($$, $1); }
+  | Attributes "operator" '<' FuncDefinition ';'   { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("<"); addChild($$, $1); }
+  | Attributes "operator" ">=" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString(">="); addChild($$, $1); }
+  | Attributes "operator" "<=" FuncDefinition ';'  { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("<="); addChild($$, $1); }
+  | Attributes "operator" "<=>" FuncDefinition ';' { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $4); $$->value.valC = getString("<=>"); addChild($$, $1); }
+  | "operator" '+' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("+"); }
+  | "operator" '-' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("-"); }
+  | "operator" '*' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("*"); }
+  | "operator" '/' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("/"); }
+  | "operator" '%' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("%"); }
+  | "operator" '&' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("&"); }
+  | "operator" '|' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("|"); }
+  | "operator" '^' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("^"); }
+  | "operator" ">>" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString(">>"); }
+  | "operator" "<<" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("<<"); }
+  | "operator" ">>>" FuncDefinition ';'            { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString(">>>"); }
+  | "operator" "&&" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("&&"); }
+  | "operator" "||" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("||"); }
+  | "operator" "^^" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("^^"); }
+  | "operator" "==" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("=="); }
+  | "operator" "!=" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("!="); }
+  | "operator" '>' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString(">"); }
+  | "operator" '<' FuncDefinition ';'              { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("<"); }
+  | "operator" ">=" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString(">="); }
+  | "operator" "<=" FuncDefinition ';'             { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("<="); }
+  | "operator" "<=>" FuncDefinition ';'            { $$ = std::make_unique<Node>(2, NodeType::OPOVERLOAD, @$); addChild($$, $3); $$->value.valC = getString("<=>"); }
   ;
 
 Parameters:
@@ -361,8 +413,8 @@ Expression:
   ;
 
 AssignExpression:
-    QualifiedID '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = getString(""); }
-  | QualifiedID CompAssignOperator Expression { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
+    QualifiedIDWithOperators '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = getString(""); }
+  | QualifiedIDWithOperators CompAssignOperator Expression { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); $$->value.valC = $2; }
   ;
 
 ArithmeticExpression:

@@ -18,6 +18,10 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			auto ctorname = std::vector<IdPart>(context.currentNamespace);
 			ctorname.emplace_back("new", false);
 			symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
+		} else if (node->type == NodeType::DTORDEF) {
+			auto dtorname = std::vector<IdPart>(context.currentNamespace);
+			dtorname.emplace_back("del", false);
+			symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), dtorname);
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], context).parts;
 			findSymbols(node->children[1]);

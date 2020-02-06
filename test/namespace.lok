@@ -17,7 +17,7 @@ namespace(baz)
 d := class >=> {
 	new(v: i32) >=> {
 		value = v;
-	}
+	};
 
 	value: i32;
 };
