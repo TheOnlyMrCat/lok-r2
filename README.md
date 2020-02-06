@@ -20,6 +20,9 @@ central class (like `Throwable` in Java) and foreach loops can't search for a `b
 The main effect this has is to prohibit a `main()` function being used as the entry point, so I've replaced it with
 `run` declarations.
 
+The three exceptions to this rule are the primitive types, of which there are only three: `bit`, so there's actually a
+value type, and `class` and `struct` (which are likely to be changed to `type`).
+
 Second, whitespace anywhere in the code must be entirely optional. In more technical terms, for every valid source input,
 you must be able to remove all bytes `0x09`, `0x0A` and `0x20` and have it function exactly the same. This does not
 necessarily mean you are able to insert whitespace anywhere in the code and have it function, but you must be able to remove
