@@ -11,4 +11,4 @@ run (args: string[]) >=> {
     foo(10, 20, i64.MAX - 50, baz = 1);
 
     std.out.writeln(args[baz - 1]);
-}
+};
