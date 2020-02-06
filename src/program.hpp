@@ -99,6 +99,13 @@ public:
 	double value;
 };
 
+class BitValue : public Expr {
+public:
+	BitValue(bool);
+
+	bool value;
+};
+
 struct ProgramContext {
 	std::unordered_map<std::string, Identifier> aliases;
 	std::vector<IdPart> currentNamespace;

@@ -47,6 +47,8 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 			return new IntValue(node->value.valI, 64);
 		case NodeType::VALFLOAT:
 			return new FloatValue(node->value.valF, 64);
+		case NodeType::VALBIT:
+			return new BitValue(node->value.valB);
 		default:
 			PLOGE << "Unhandled expression type";
 	}

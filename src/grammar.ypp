@@ -39,6 +39,7 @@ union ValueType {
     long long valI;
     double valF;
     strings_t valC;
+    bool valB;
 };
 
 struct Node {
@@ -64,6 +65,7 @@ struct Node {
 %token <strings_t> ID STRING
 %token <double> FLOAT
 %token <long long> INTEGER CHAR
+%token <bool> BIT
 
 %token DBLCOLON "::" DBLBAR "||" DBLAND "&&" DBLXOR "^^" DBLLEFT "<<" DBLRIGHT ">>" TPLRIGHT ">>>" DBLPLUS "++" DBLMINUS "--" DBLNOT "!!"
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
@@ -474,7 +476,8 @@ BasicValue:
   | BasicValueString         { $$ = std::move($1); }
   | BasicValueInt            { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
   | BasicValueFloat          { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
-  | CHAR                     { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valC = $1; }
+  | CHAR                     { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
+  | BIT                      { $$ = std::make_unique<Node>(0, NodeType::VALBIT, @$); $$->value.valB = $1; }
   ;
 
 BasicValueString:

@@ -94,8 +94,9 @@ OpExpr::~OpExpr() {
 	delete right;
 }
 
-IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", false}}), TypeQualifier(false, size))), value(val) {}
-FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", false}}), TypeQualifier(false, size))), value(val) {}
+IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, size))), value(val) {}
+FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, size))), value(val) {}
+BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
 
 std::string Symbol::toLokConv() {
 	//TODO
