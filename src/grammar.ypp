@@ -286,8 +286,7 @@ ArgumentList:
   ;
 
 Parameter:
-    ID          { $$ = std::make_unique<Node>(0, NodeType::PARAM, @$); $$->value.valC = $1; }
-  | ID ':' Type { $$ = std::make_unique<Node>(1, NodeType::PARAM, @$); $$->value.valC = $1; addChild($$, $3); }
+    ID ':' Type { $$ = std::make_unique<Node>(1, NodeType::PARAM, @$); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 Attributes:

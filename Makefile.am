@@ -6,7 +6,7 @@ AM_YFLAGS = -d -Wno-yacc
 BUILT_SOURCES = src/grammar.hpp src/nodetypenames.h
 EXTRA_DIST = lib test src/nodetypenames.txt
 
-clok_SOURCES = src/main.cpp src/bridge.cpp src/constructs.cpp src/extrapolate.cpp src/lexer.lpp src/grammar.ypp src/nodetypenames.txt
+clok_SOURCES = src/main.cpp src/bridge.cpp src/constructs.cpp src/extrapolate.cpp src/util.cpp src/lexer.lpp src/grammar.ypp src/nodetypenames.txt
 clok_CPPFLAGS = -Ilib
 clok_CXXFLAGS = -Wno-deprecated-register
 clok_LDADD = $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB)

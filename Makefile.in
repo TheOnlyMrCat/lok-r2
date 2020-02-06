@@ -111,7 +111,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_clok_OBJECTS = src/clok-main.$(OBJEXT) src/clok-bridge.$(OBJEXT) \
 	src/clok-constructs.$(OBJEXT) src/clok-extrapolate.$(OBJEXT) \
-	src/clok-lexer.$(OBJEXT) src/clok-grammar.$(OBJEXT)
+	src/clok-util.$(OBJEXT) src/clok-lexer.$(OBJEXT) \
+	src/clok-grammar.$(OBJEXT)
 clok_OBJECTS = $(am_clok_OBJECTS)
 am__DEPENDENCIES_1 =
 clok_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -136,7 +137,7 @@ am__depfiles_remade = src/$(DEPDIR)/clok-bridge.Po \
 	src/$(DEPDIR)/clok-constructs.Po \
 	src/$(DEPDIR)/clok-extrapolate.Po \
 	src/$(DEPDIR)/clok-grammar.Po src/$(DEPDIR)/clok-lexer.Po \
-	src/$(DEPDIR)/clok-main.Po
+	src/$(DEPDIR)/clok-main.Po src/$(DEPDIR)/clok-util.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -545,7 +546,7 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_YFLAGS = -d -Wno-yacc
 BUILT_SOURCES = src/grammar.hpp src/nodetypenames.h
 EXTRA_DIST = lib test src/nodetypenames.txt
-clok_SOURCES = src/main.cpp src/bridge.cpp src/constructs.cpp src/extrapolate.cpp src/lexer.lpp src/grammar.ypp src/nodetypenames.txt
+clok_SOURCES = src/main.cpp src/bridge.cpp src/constructs.cpp src/extrapolate.cpp src/util.cpp src/lexer.lpp src/grammar.ypp src/nodetypenames.txt
 clok_CPPFLAGS = -Ilib
 clok_CXXFLAGS = -Wno-deprecated-register
 clok_LDADD = $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB)
@@ -661,6 +662,8 @@ src/clok-constructs.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/clok-extrapolate.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/clok-util.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/clok-lexer.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/grammar.hpp: src/grammar.cpp
@@ -686,6 +689,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-grammar.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-lexer.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-main.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-util.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -764,6 +768,20 @@ src/clok-extrapolate.obj: src/extrapolate.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/extrapolate.cpp' object='src/clok-extrapolate.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -c -o src/clok-extrapolate.obj `if test -f 'src/extrapolate.cpp'; then $(CYGPATH_W) 'src/extrapolate.cpp'; else $(CYGPATH_W) '$(srcdir)/src/extrapolate.cpp'; fi`
+
+src/clok-util.o: src/util.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -MT src/clok-util.o -MD -MP -MF src/$(DEPDIR)/clok-util.Tpo -c -o src/clok-util.o `test -f 'src/util.cpp' || echo '$(srcdir)/'`src/util.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/clok-util.Tpo src/$(DEPDIR)/clok-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/util.cpp' object='src/clok-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -c -o src/clok-util.o `test -f 'src/util.cpp' || echo '$(srcdir)/'`src/util.cpp
+
+src/clok-util.obj: src/util.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -MT src/clok-util.obj -MD -MP -MF src/$(DEPDIR)/clok-util.Tpo -c -o src/clok-util.obj `if test -f 'src/util.cpp'; then $(CYGPATH_W) 'src/util.cpp'; else $(CYGPATH_W) '$(srcdir)/src/util.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/clok-util.Tpo src/$(DEPDIR)/clok-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/util.cpp' object='src/clok-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -c -o src/clok-util.obj `if test -f 'src/util.cpp'; then $(CYGPATH_W) 'src/util.cpp'; else $(CYGPATH_W) '$(srcdir)/src/util.cpp'; fi`
 
 src/clok-lexer.o: src/lexer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -MT src/clok-lexer.o -MD -MP -MF src/$(DEPDIR)/clok-lexer.Tpo -c -o src/clok-lexer.o `test -f 'src/lexer.cpp' || echo '$(srcdir)/'`src/lexer.cpp
@@ -1241,6 +1259,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/clok-grammar.Po
 	-rm -f src/$(DEPDIR)/clok-lexer.Po
 	-rm -f src/$(DEPDIR)/clok-main.Po
+	-rm -f src/$(DEPDIR)/clok-util.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -1294,6 +1313,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/clok-grammar.Po
 	-rm -f src/$(DEPDIR)/clok-lexer.Po
 	-rm -f src/$(DEPDIR)/clok-main.Po
+	-rm -f src/$(DEPDIR)/clok-util.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
