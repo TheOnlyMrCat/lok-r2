@@ -22,6 +22,10 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			auto dtorname = std::vector<IdPart>(context.currentNamespace);
 			dtorname.emplace_back("del", false);
 			symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), dtorname);
+		} else if (node->type == NodeType::OPOVERLOAD) {
+			auto overloadname = std::vector<IdPart>(context.currentNamespace);
+			overloadname.emplace_back("operator" + strings[node->value.valC], false);
+			symbols.emplace_back(Type(), overloadname);
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], context).parts;
 			findSymbols(node->children[1]);
@@ -44,8 +48,7 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 		case NodeType::VALFLOAT:
 			return new FloatValue(node->value.valF, 64);
 		default:
-			PLOGF << "Unhandled expression type";
-			exit(EXIT_FAILURE);
+			PLOGE << "Unhandled expression type";
 	}
 }
 
