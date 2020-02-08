@@ -49,6 +49,14 @@ Identifier::Identifier(NodePtr& node, ProgramContext& context) : parts(context.c
 
 Identifier::Identifier(std::vector<IdPart> parts): parts(parts) {}
 
+bool Identifier::operator==(const Identifier &other) const {
+	return parts == other.parts;
+}
+
+bool Identifier::operator< (const Identifier &other) const {
+	return parts < other.parts;
+}
+
 TypeQualifier::TypeQualifier(NodePtr& node) {
 	isPointer = node->type == NodeType::TYPEQUALPTR;
 	if (node->type == NodeType::TYPEQUALARR) arraySize = node->value.valI;
@@ -111,3 +119,5 @@ std::string Symbol::toLokConv() {
 	}
 	return sb;
 }
+
+bad_symbol::bad_symbol(): runtime_error("bad symbol") {}

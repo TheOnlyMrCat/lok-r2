@@ -1,10 +1,21 @@
 #pragma once
 
 #include "clok.hpp"
-#include "type.hpp"
 
 #include <string>
 #include <vector>
+#include <exception>
+
+struct ProgramContext;
+struct ReturningType;
+struct Identifier;
+struct StackFrame;
+struct Symbol;
+
+class bad_symbol : public std::runtime_error {
+public:
+	bad_symbol();
+};
 
 template <typename T>
 std::vector<T> combineParts(std::vector<T> parts, T suffix) {
@@ -13,3 +24,5 @@ std::vector<T> combineParts(std::vector<T> parts, T suffix) {
 }
 
 ReturningType typeFromFunction(std::unique_ptr<Node>& node, ProgramContext& pc);
+std::vector<Symbol> aggreateStack(std::vector<StackFrame> frames);
+Symbol getSymbol(Identifier id, ProgramContext& pc);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "clok.hpp"
+#include <map>
 
 #include <valuable/value-ptr.hpp>
 namespace val=valuable;
@@ -33,6 +34,9 @@ struct Identifier {
 	Identifier(NodePtr& node, ProgramContext& context);
 	Identifier(std::vector<IdPart> parts);
 
+	bool operator== (const Identifier &other) const;
+	bool operator< (const Identifier &other) const;
+
     std::vector<IdPart> parts;
 };
 
@@ -45,7 +49,6 @@ public:
 	std::string toCxxConv();
 	std::string toCConv();
 
-private:
 	Type type;
 	Identifier id;
 };
@@ -106,9 +109,16 @@ public:
 	bool value;
 };
 
+struct StackFrame {
+	std::vector<Symbol> symbols;
+};
+
 struct ProgramContext {
-	std::unordered_map<std::string, Identifier> aliases;
+	std::map<Identifier, Symbol> aliases;
 	std::vector<IdPart> currentNamespace;
+	std::vector<StackFrame> stackFrames;
+	std::vector<Symbol> symbols;
+	std::vector<Decl> declarations;
 };
 
 class Program {
@@ -117,9 +127,6 @@ public:
 	void extrapolate(std::unique_ptr<Node>& tree);
 
 private:
-	std::vector<Symbol> symbols;
-	std::vector<Decl> declarations;
-
 	ProgramContext context;
 
 	Expr *_extrapolate(std::unique_ptr<Node>& node);

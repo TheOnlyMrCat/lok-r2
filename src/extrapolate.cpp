@@ -10,26 +10,26 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 				context.currentNamespace.push_back(std::make_pair(strings[node->value.valC], true));
 				findSymbols(node->children[0]->children[0]);
 				context.currentNamespace.pop_back();
-				symbols.emplace_back(node, true, context);
+				context.symbols.emplace_back(node, true, context);
 			} else {
-				symbols.emplace_back(node, false, context);
+				context.symbols.emplace_back(node, false, context);
 			}
-			PLOGD << symbols.back().toLokConv();
+			PLOGD << context.symbols.back().toLokConv();
 		} else if (node->type == NodeType::CTORDEF) {
 			auto ctorname = std::vector<IdPart>(context.currentNamespace);
 			ctorname.emplace_back("new", false);
-			symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
-			PLOGD << symbols.back().toLokConv();
+			context.symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
+			PLOGD << context.symbols.back().toLokConv();
 		} else if (node->type == NodeType::DTORDEF) {
 			auto dtorname = std::vector<IdPart>(context.currentNamespace);
 			dtorname.emplace_back("del", false);
-			symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), dtorname);
-			PLOGD << symbols.back().toLokConv();
+			context.symbols.emplace_back(Type(SingleType(Identifier(context.currentNamespace))), dtorname);
+			PLOGD << context.symbols.back().toLokConv();
 		} else if (node->type == NodeType::OPOVERLOAD) {
 			auto overloadname = std::vector<IdPart>(context.currentNamespace);
 			overloadname.emplace_back("operator" + strings[node->value.valC], false);
-			symbols.emplace_back(typeFromFunction(node->children[0], context), overloadname);
-			PLOGD << symbols.back().toLokConv();
+			context.symbols.emplace_back(typeFromFunction(node->children[0], context), overloadname);
+			PLOGD << context.symbols.back().toLokConv();
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], context).parts;
 			findSymbols(node->children[1]);
