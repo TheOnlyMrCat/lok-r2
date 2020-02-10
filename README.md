@@ -10,23 +10,22 @@ as possible. For now, snippets of the planned syntax can be seen in the
 
 ## Design
 
-### Patterns
+### Laws
 
-The major design patterns I'm using making Lok are ones I think are logical.
+The design laws I'm using making Lok are ones I think are logical.
 
-First, the compiler is not allowed to search for identifiers (class names, function names, variable names, etc.)
-when trying to implement functionality. This means that, among other things, exceptions are not able to derive from one
-central class (like `Throwable` in Java) and foreach loops can't search for a `begin()` and `end()` function on classes.
-The main effect this has is to prohibit a `main()` function being used as the entry point, so I've replaced it with
-`run` declarations.
+1: **The compiler is not allowed to search for identifiers (class names, function names, variable names, etc.) when trying to implement functionality.**
+This means that, among other things, exceptions are not able to derive from one central class (like `Throwable` in Java)
+and foreach loops can't search for a `begin()` and `end()` function on classes. The main effect this has is to prohibit
+a `main()` function being used as the entry point, so I've replaced it with `run` declarations.
 
-The three exceptions to this rule are the primitive types, of which there are only three: `bit`, so there's actually a
+The exceptions to this rule are the primitive types, of which there are only three: `bit`, so there's actually a
 value type, and `class` and `struct` (which are likely to be changed to `type`).
 
-Second, whitespace anywhere in the code must be entirely optional. In more technical terms, for every valid source input,
-you must be able to remove all bytes `0x09`, `0x0A` and `0x20` and have it function exactly the same. This does not
-necessarily mean you are able to insert whitespace anywhere in the code and have it function, but you must be able to remove
-whitespace that is there.
+2: **Whitespace anywhere in the code must be entirely optional.**
+In more technical terms, for every valid source input, you must be able to remove all bytes `0x09`, `0x0A` and `0x20` and
+have it function exactly the same. This does not necessarily mean you are able to insert whitespace anywhere in the code
+and have it function, but you must be able to remove whitespace that is there.
 
 Single-line comments are an exception to this rule. They are allowed to exist without closing syntax, and the test function
 will remove single-line comments.

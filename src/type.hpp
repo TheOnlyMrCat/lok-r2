@@ -26,7 +26,6 @@ public:
     SingleType(Identifier, TypeQualifier);
     SingleType(Identifier);
 
-private:
     Identifier id;
     val::value_ptr<TypeQualifier> qualifier;
 };
@@ -36,7 +35,6 @@ public:
     TupleType(NodePtr& node, ProgramContext& pc);
     TupleType(std::vector<Type>);
 
-private:
     std::vector<Type> types;
 };
 
@@ -45,7 +43,6 @@ public:
     ReturningType(NodePtr& node, ProgramContext& pc);
     ReturningType(TupleType, Type);
 
-private:
     TupleType input;
     Type output;
 };

@@ -42,7 +42,11 @@ public:
 			default:
 				break;
 		}
-		ss << plog::severityToString(record.getSeverity()) << "\x1b[0m: " << record.getMessage() << '\n';
+		if (record.getSeverity() == plog::Severity::fatal) {
+			ss << "INTERNAL ERROR" << "\x1b[0m: " << record.getMessage() << '\n';
+		} else {
+			ss << plog::severityToString(record.getSeverity()) << "\x1b[0m: " << record.getMessage() << '\n';
+		}
 		return ss.str();
 	}
 };
