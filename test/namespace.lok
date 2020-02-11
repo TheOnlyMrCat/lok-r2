@@ -4,7 +4,7 @@ a := 5;
 
 namespace(foo.bar)
 
-b := (in: i32) -> i32 => in + 1;
+b := (in: i32) -> i32 => in + 1;;
 
 c := (ina: i32, inb: i32) -> i32 >=> {
 	ina += inb;

@@ -117,7 +117,7 @@ struct ProgramContext {
 	std::map<Identifier, Symbol> aliases;
 	std::vector<IdPart> currentNamespace;
 	std::vector<StackFrame> stackFrames;
-	std::vector<Symbol> symbols;
+	std::map<Identifier, Symbol> symbols;
 	std::vector<Decl> declarations;
 };
 

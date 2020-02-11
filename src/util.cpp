@@ -35,9 +35,9 @@ Symbol getSymbol(Identifier id, ProgramContext& pc) {
     if (alias != pc.aliases.end()) {
         return alias->second;
     }
-    auto symbol = std::find_if(pc.symbols.begin(), pc.symbols.end(), [&id](const Symbol &s) { return s.id == id; });
+    auto symbol = std::find_if(pc.symbols.begin(), pc.symbols.end(), [&id](const std::pair<const Identifier, Symbol> &s) { return s.second.id == id; });
     if (symbol != pc.symbols.end()) {
-        return *symbol;
+        return symbol->second;
     }
     throw bad_symbol();
 }

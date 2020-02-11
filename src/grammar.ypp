@@ -410,6 +410,7 @@ QualifiedID:
 
 QualifiedIDPart:
     ID                                  %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(0, NodeType::QUALPART, @$); $$->value.valC = $1; }
+  | QualifiedIDPart '[' ']'             %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); }
   | QualifiedIDPart Arguments           %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); addChild($$, $2); }
   | QualifiedIDPart '[' Expression ']'  %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); addChild($$, $3); }
   | QualifiedIDPart '.' QualifiedIDPart %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); addChild($$, $3); }
