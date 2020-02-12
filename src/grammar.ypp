@@ -80,7 +80,7 @@ struct Node {
 %type <long long> BasicValueInt
 %type <double> BasicValueFloat
 %type <strings_t> PrefixOperator PostfixOperator CompAssignOperator
-%type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath NamespaceLocator NamespacePath NamespaceItem RunDeclaration ClassItem ClassBody
+%type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath NamespaceLocator QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
 %type <NodePtr> Attributes AttributeList
 %type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign DtorDefinition OpOverload
@@ -90,10 +90,10 @@ struct Node {
 %type <NodePtr> Expression BasicExpression
 %type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators BasicValue BasicValueString
 
-%right "If" "else"
+%right "if" "else"
 %left "QualifiedIDPart"
 
-%right '=' "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" ">>>="
+%right '=' "CompAssign" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" ">>>="
 %left "||"
 %left "^^"
 %left "&&"
@@ -147,13 +147,13 @@ FilePath:
   ;
 
 NamespaceLocator:
-    NamespacePath         { $$ = std::make_unique<Node>(1, NodeType::NONE, @$); addChild($$, $1); }
-  | ID "::" NamespacePath { $$ = std::make_unique<Node>(2, NodeType::NONE, @$); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); addChild($$, $3); }
+    QualifiedPath         { $$ = std::make_unique<Node>(1, NodeType::NONE, @$); addChild($$, $1); }
+  | ID "::" QualifiedPath { $$ = std::make_unique<Node>(2, NodeType::NONE, @$); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); addChild($$, $3); }
   ;
 
-NamespacePath:
+QualifiedPath:
     ID                   { $$ = std::make_unique<Node>(0, NodeType::FILEPATH, @$); $$->value.valC = $1; }
-  | ID '.' NamespacePath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
+  | ID '.' QualifiedPath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
 
 NamespaceItems:
     %empty                       { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
@@ -317,7 +317,7 @@ Type:
   ;
 
 SingleType:
-    QualifiedID TypeQualifiers { $$ = std::make_unique<Node>(2, NodeType::TYPESINGLE, @$); addChild($$, $1); addChild($$, $2); }
+    QualifiedPath TypeQualifiers { $$ = std::make_unique<Node>(2, NodeType::TYPESINGLE, @$); addChild($$, $1); addChild($$, $2); }
   ;
 
 TypeQualifiers:
@@ -362,18 +362,18 @@ Statement:
   ;
 
 IfStatement:
-    "if" '(' Expression ')' BlockStatement                       %prec "If" { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); }
-  | "if" '(' Expression ')' BlockStatement "else" IfStatement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
-  | "if" '(' Expression ')' BlockStatement "else" BlockStatement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
-  | "if" '(' Expression ')' BlockStatement "else" "=>" Statement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $8);}
-  | "if" '(' Expression ')' IfStatement                          %prec "If" { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); }
-  | "if" '(' Expression ')' IfStatement "else" IfStatement       %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
-  | "if" '(' Expression ')' IfStatement "else" BlockStatement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
-  | "if" '(' Expression ')' IfStatement "else" "=>" Statement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $8);}
-  | "if" '(' Expression ')' "=>" Statement                       %prec "If" { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); }
-  | "if" '(' Expression ')' "=>" Statement "else" IfStatement    %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $8);}
-  | "if" '(' Expression ')' "=>" Statement "else" BlockStatement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $8);}
-  | "if" '(' Expression ')' "=>" Statement "else" "=>" Statement %prec "If" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $9);}
+    "if" '(' Expression ')' BlockStatement                       %prec "if"   { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); }
+  | "if" '(' Expression ')' BlockStatement "else" IfStatement                 { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' BlockStatement "else" BlockStatement              { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' BlockStatement "else" "=>" Statement %prec "else" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $8);}
+  | "if" '(' Expression ')' IfStatement                          %prec "if"   { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); }
+  | "if" '(' Expression ')' IfStatement "else" IfStatement                    { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' IfStatement "else" BlockStatement                 { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $7);}
+  | "if" '(' Expression ')' IfStatement "else" "=>" Statement    %prec "else" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $5); addChild($$, $8);}
+  | "if" '(' Expression ')' "=>" Statement                       %prec "if"   { $$ = std::make_unique<Node>(2, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); }
+  | "if" '(' Expression ')' "=>" Statement "else" IfStatement                 { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $8);}
+  | "if" '(' Expression ')' "=>" Statement "else" BlockStatement              { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $8);}
+  | "if" '(' Expression ')' "=>" Statement "else" "=>" Statement %prec "else" { $$ = std::make_unique<Node>(3, NodeType::STMTIF, @$); addChild($$, $3); addChild($$, $6); addChild($$, $9);}
   ;
 
 ForStatement:
@@ -448,7 +448,8 @@ Expression:
   | Expression "<=>" Expression              { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<=>"); addChild($$, $3); }
 
   | Expression '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); }
-  | Expression CompAssignOperator Expression { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+  | Expression CompAssignOperator Expression %prec "CompAssign"
+                                             { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   ;
 
 BasicExpression:
