@@ -70,6 +70,7 @@ struct Node {
 %token <bool> BIT
 
 %token DBLCOLON "::" DBLBAR "||" DBLAND "&&" DBLXOR "^^" DBLLEFT "<<" DBLRIGHT ">>" TPLRIGHT ">>>" DBLPLUS "++" DBLMINUS "--" DBLNOT "!!"
+%token COLONARROW ":>"
 %token DBLEQ "==" NOTEQ "!=" GTEQ ">=" LTEQ "<="
 %token RSARROW "->" RDARROW "=>" RRDARROW ">=>"
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
@@ -80,8 +81,8 @@ struct Node {
 %type <long long> BasicValueInt
 %type <double> BasicValueFloat
 %type <strings_t> PrefixOperator PostfixOperator CompAssignOperator
-%type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath NamespaceLocator QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
-%type <NodePtr> BasicDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
+%type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath FullyQualifiedPath QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
+%type <NodePtr> BasicDeclaration TypeDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
 %type <NodePtr> Attributes AttributeList
 %type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign DtorDefinition OpOverload
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
@@ -92,6 +93,8 @@ struct Node {
 
 %right "if" "else"
 %left "QualifiedIDPart"
+%precedence "NamespaceItems"
+%precedence "run" ID '@'
 
 %right '=' "CompAssign" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" ">>>="
 %left "||"
@@ -134,7 +137,7 @@ LoadStatement:
   ;
 
 NamespaceStatement:
-    "namespace" '(' NamespaceLocator ')' NamespaceItems { $$ = std::make_unique<Node>(1, NodeType::NAMESPACE, @$); addChild($$, $3); addChild($$, $5); }
+    "namespace" '(' FullyQualifiedPath ')' NamespaceItems { $$ = std::make_unique<Node>(1, NodeType::NAMESPACE, @$); addChild($$, $3); addChild($$, $5); }
 
 FileLocator:
     FilePath         { $$ = std::make_unique<Node>(1, NodeType::NONE, @$); addChild($$, $1); }
@@ -146,23 +149,24 @@ FilePath:
   | ID '/' FilePath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
   ;
 
-NamespaceLocator:
+FullyQualifiedPath:
     QualifiedPath         { $$ = std::make_unique<Node>(1, NodeType::NONE, @$); addChild($$, $1); }
-  | ID "::" QualifiedPath { $$ = std::make_unique<Node>(2, NodeType::NONE, @$); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); addChild($$, $3); }
+  | ID ":>" QualifiedPath { $$ = std::make_unique<Node>(2, NodeType::NONE, @$); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); addChild($$, $3); }
   ;
 
 QualifiedPath:
     ID                   { $$ = std::make_unique<Node>(0, NodeType::FILEPATH, @$); $$->value.valC = $1; }
-  | ID '.' QualifiedPath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
+  | ID "::" QualifiedPath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
 
 NamespaceItems:
     %empty                       { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
-  | NamespaceItems NamespaceItem { $$ = std::move($1); addChild($$, $2); }
+  | NamespaceItems NamespaceItem %prec "NamespaceItems" { $$ = std::move($1); addChild($$, $2); }
   ;
 
 NamespaceItem:
     BasicDeclaration { $$ = std::move($1); }
   | RunDeclaration   { $$ = std::move($1); }
+  | TypeDeclaration  { $$ = std::move($1); }
   ;
 
 BasicDeclaration:
@@ -172,6 +176,11 @@ BasicDeclaration:
   | ID ':' Type '=' Expression ';'            { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); addChild($$, $5); }
   | ID ':' '=' Expression ';'                 { $$ = std::make_unique<Node>(2, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $4); }
   | ID ':' Type ';'                           { $$ = std::make_unique<Node>(1, NodeType::DECL, @$); $$->value.valC = $1; addChild($$, $3); }
+  ;
+
+TypeDeclaration:
+    Attributes ID "::" ClassDefinition ';' { $$ = std::make_unique<Node>(2, NodeType::TYPEDECL, @$); $$->value.valC = $2; addChild($$, $4); addChild($$, $1); }
+  | ID "::" ClassDefinition ';'            { $$ = std::make_unique<Node>(1, NodeType::TYPEDECL, @$); $$->value.valC = $1; addChild($$, $3); }
   ;
 
 RunDeclaration:
@@ -317,7 +326,7 @@ Type:
   ;
 
 SingleType:
-    QualifiedPath TypeQualifiers { $$ = std::make_unique<Node>(2, NodeType::TYPESINGLE, @$); addChild($$, $1); addChild($$, $2); }
+    FullyQualifiedPath TypeQualifiers { $$ = std::make_unique<Node>(2, NodeType::TYPESINGLE, @$); addChild($$, $1); addChild($$, $2); }
   ;
 
 TypeQualifiers:
@@ -480,7 +489,6 @@ BasicExpression:
 BasicValue:
     QualifiedIDWithOperators { $$ = std::move($1); }
   | FuncDefinition           { $$ = std::move($1); }
-  | ClassDefinition			     { $$ = std::move($1); }
   | BasicValueString         { $$ = std::move($1); }
   | BasicValueInt            { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
   | BasicValueFloat          { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
@@ -505,7 +513,7 @@ BasicValueFloat:
   ;
 
 PrefixOperator:
-    '+'  { $$ = getString("+"); }
+    '+'  { $$ = getString("+"); /*TODO 2 s/r conflicts*/}
   | '-'  { $$ = getString("-"); }
   | '*'  { $$ = getString("*"); }
   | '&'  { $$ = getString("&"); }

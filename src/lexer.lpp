@@ -66,6 +66,7 @@ else/(if[^A-Za-z0-9_]|[^A-Za-z0-9_]) { return yy::parser::make_ELSEK(lok); }
 
 "::" { return yy::parser::make_DBLCOLON(lok); }
 "->" { return yy::parser::make_RSARROW(lok); }
+":>" { return yy::parser::make_COLONARROW(lok); }
 "||" { return yy::parser::make_DBLBAR(lok); }
 "&&" { return yy::parser::make_DBLAND(lok); }
 "^^" { return yy::parser::make_DBLXOR(lok); }

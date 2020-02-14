@@ -6,16 +6,14 @@
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {
 		if (node->type == NodeType::DECL) {
-			if (node->children[0]->type == NodeType::CLASSDEF || node->children[0]->type == NodeType::STRUCTDEF) {
-				context.currentNamespace.push_back(std::make_pair(strings[node->value.valC], true));
-				findSymbols(node->children[0]->children[0]);
-				context.currentNamespace.pop_back();
-				Symbol s = Symbol(node, true, context);
-				context.symbols.emplace(std::make_pair(s.id, std::move(s)));
-			} else {
-				Symbol s = Symbol(node, false, context);
-				context.symbols.emplace(std::make_pair(s.id, std::move(s)));
-			}
+			Symbol s = Symbol(node, false, context);
+			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
+		} else if (node->type == NodeType::TYPEDECL) {
+			context.currentNamespace.push_back(std::make_pair(strings[node->value.valC], true));
+			findSymbols(node->children[0]->children[0]);
+			context.currentNamespace.pop_back();
+			Symbol s = Symbol(node, true, context);
+			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
 		} else if (node->type == NodeType::CTORDEF) {
 			auto ctorname = std::vector<IdPart>(context.currentNamespace);
 			ctorname.emplace_back("new", false);

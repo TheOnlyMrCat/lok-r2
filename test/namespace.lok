@@ -2,7 +2,7 @@ namespace(foo)
 
 a := 5;
 
-namespace(foo.bar)
+namespace(foo::bar)
 
 b := (in: i32) -> i32 => in + 1;;
 
@@ -14,7 +14,7 @@ c := (ina: i32, inb: i32) -> i32 >=> {
 
 namespace(baz)
 
-d := class >=> {
+d :: class >=> {
 	new(v: i32) >=> {
 		value = v;
 	};
