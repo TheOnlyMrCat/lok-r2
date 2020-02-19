@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 
 		PLOGI << "Parsing file " << filename;
 		if (b.parse(filename) != 0) return EXIT_FAILURE;
-		syntaxes[filename] = std::move(parseResult);
+		syntaxes[filename] = std::move(b.result);
 
 		if (astDump) {
 			std::string astFile = filename.substr(0, filename.find_last_of('.')) += ".ast";

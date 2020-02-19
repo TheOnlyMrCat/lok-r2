@@ -18,7 +18,7 @@ int column;
 %x comment
 %%
 %{
-    yy::location& lok = bridge.location;
+    yy::location& lok = bridge->location;
     lok.step();
 %}
 

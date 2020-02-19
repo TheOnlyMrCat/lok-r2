@@ -3,6 +3,7 @@
 #include "clok.hpp"
 #include "program.hpp"
 #include "util.hpp"
+#include "grammar.hpp"
 
 Type::Type() {
 	typeType = -1;

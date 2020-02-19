@@ -18,12 +18,10 @@ void yyerror(const char *p);
 %code requires {
 class Bridge;
 
-struct Node;
-typedef std::unique_ptr<Node> NodePtr;
-typedef size_t strings_t;
+#include "types.hpp"
 }
 
-%param { Bridge& bridge }
+%param { Bridge *bridge }
 
 %code provides {
 
@@ -45,15 +43,15 @@ struct ValueType {
 };
 
 struct Node {
-    Node(int initialChildren, NodeType type, yy::parser::location_type loc) : type(type), location(loc) {
+  Node(int initialChildren, NodeType type, yy::parser::location_type loc) : type(type), location(loc) {
     children.reserve(initialChildren);
   }
 
-    NodeType type;
-    struct ValueType value;
+  NodeType type;
+  struct ValueType value;
   yy::parser::location_type location;
 
-    std::vector<std::unique_ptr<Node>> children;
+  std::vector<std::unique_ptr<Node>> children;
 };
 }
 
@@ -78,9 +76,7 @@ struct Node {
 
 %token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace" DELETEK "delete" OPERATORK "operator"
 
-%type <long long> BasicValueInt
-%type <double> BasicValueFloat
-%type <strings_t> PrefixOperator PostfixOperator CompAssignOperator
+%type <strings_t> CompAssignOperator
 %type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath FullyQualifiedPath QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration TypeDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
 %type <NodePtr> Attributes AttributeList
@@ -89,12 +85,10 @@ struct Node {
 %type <NodePtr> BlockStatement Statements Statement
 %type <NodePtr> IfStatement ForStatement ForArguments DoForStatement DoForArguments WhileStatement ReturnStatement
 %type <NodePtr> Expression BasicExpression
-%type <NodePtr> QualifiedID QualifiedIDPart QualifiedIDWithOperators BasicValue BasicValueString
+%type <NodePtr> BasicValue BasicValueString
 
 %right "if" "else"
 %left "QualifiedIDPart"
-%precedence "NamespaceItems"
-%precedence "run" ID '@'
 
 %right '=' "CompAssign" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" ">>>="
 %left "||"
@@ -109,9 +103,9 @@ struct Node {
 %left "<<" ">>" ">>>"
 %left '+' '-'
 %left '*' '/' '%'
-
-%left "PostfixOperator"
+%left "++" "--" '(' '['
 %right "PrefixOperator"
+%left '.'
 
 %code {
   inline void addChild(NodePtr& parent, NodePtr&& child) {
@@ -126,9 +120,9 @@ struct Node {
 %%
 root:
     %empty
-  | root LoadStatement 	     { addChild(parseResult, $2); }
-  | root NamespaceStatement  { addChild(parseResult, $2); }
-  | root NamespaceItem 	     { addChild(parseResult, $2); }
+  | root LoadStatement 	     { addChild(bridge->result, $2); }
+  | root NamespaceStatement  { addChild(bridge->result, $2); }
+  | root NamespaceItem 	     { addChild(bridge->result, $2); }
   | root "namespace" '(' ')' { }
   ;
 
@@ -426,28 +420,22 @@ ReturnStatement:
     "return" '(' Expression ')' { $$ = std::make_unique<Node>(1, NodeType::STMTRTN, @$); addChild($$, $3); }
 	;
 
-QualifiedID:
-    QualifiedIDPart         { $$ = std::make_unique<Node>(1, NodeType::QUALID, @$); addChild($$, $1); }
-  | ID "::" QualifiedIDPart { $$ = std::make_unique<Node>(2, NodeType::QUALID, @$); addChild($$, $3); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); }
-  ;
-
-QualifiedIDPart:
-    ID                                  %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(0, NodeType::QUALPART, @$); $$->value.valC = $1; }
-  | QualifiedIDPart '[' ']'             %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); }
-  | QualifiedIDPart Arguments           %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); addChild($$, $2); }
-  | QualifiedIDPart '[' Expression ']'  %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); addChild($$, $3); }
-  | QualifiedIDPart '.' QualifiedIDPart %prec "QualifiedIDPart" { $$ = std::make_unique<Node>(1, NodeType::QUALPART, @$); addChild($$, $1); addChild($$, $3); }
-  ;
-
-QualifiedIDWithOperators:
-    QualifiedID                                                      { $$ = std::make_unique<Node>(1, NodeType::QUALIDOP, @$); addChild($$, $1); }
-  | PrefixOperator QualifiedIDWithOperators  %prec "PrefixOperator"  { $$ = std::make_unique<Node>(2, NodeType::QUALIDOP, @$); NodePtr op = std::make_unique<Node>(0, NodeType::NONE, @$); op->value.valC = $1; addChild($$, op); addChild($$, $2); }
-  | QualifiedIDWithOperators PostfixOperator %prec "PostfixOperator" { $$ = std::make_unique<Node>(2, NodeType::QUALIDOP, @$); addChild($$, $1); NodePtr op = std::make_unique<Node>(0, NodeType::NONE, @$); op->value.valC = $2; addChild($$, op); }
-  ;
-
 Expression:
     BasicValue                               { $$ = std::move($1); }
   | '(' Expression ')'                       { $$ = std::move($2); }
+  | Expression '[' Expression ']'            { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("[]"); addChild($$, $3); }
+  | Expression Arguments                     { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("()"); addChild($$, $2); }
+  | Expression "++"                          { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("++"); $$->value.valB = true; }
+  | Expression "--"                          { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("--"); $$->value.valB = true; }
+  | '+' Expression    %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("+"); $$->value.valB = false; }
+  | '-' Expression    %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("-"); $$->value.valB = false; }
+  | '*' Expression    %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("*"); $$->value.valB = false; }
+  | '&' Expression    %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("&"); $$->value.valB = false; }
+  | "++" Expression   %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("++"); $$->value.valB = false; }
+  | "--" Expression   %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("--"); $$->value.valB = false; }
+  | '!' Expression    %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("!"); $$->value.valB = false; }
+  | "!!" Expression   %prec "PrefixOperator" { $$ = std::make_unique<Node>(1, NodeType::EXPRBASIC, @$); addChild($$, $2); $$->value.valC = getString("!!"); $$->value.valB = false; }
+  | Expression '.' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("."); addChild($$, $3); }
   | Expression '+' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("+"); addChild($$, $3); }
   | Expression '-' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("-"); addChild($$, $3); }
   | Expression '*' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("*"); addChild($$, $3); }
@@ -501,45 +489,17 @@ BasicExpression:
   ;
 
 BasicValue:
-    QualifiedIDWithOperators { $$ = std::move($1); }
+    FullyQualifiedPath       { $$ = std::move($1); }
   | FuncDefinition           { $$ = std::move($1); }
   | BasicValueString         { $$ = std::move($1); }
-  | BasicValueInt            { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
-  | BasicValueFloat          { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
+  | INTEGER                  { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
+  | FLOAT                    { $$ = std::make_unique<Node>(0, NodeType::VALFLOAT, @$); $$->value.valF = $1; }
   | CHAR                     { $$ = std::make_unique<Node>(0, NodeType::VALINT, @$); $$->value.valI = $1; }
   | BIT                      { $$ = std::make_unique<Node>(0, NodeType::VALBIT, @$); $$->value.valB = $1; }
   ;
 
 BasicValueString:
     STRING { $$ = std::make_unique<Node>(0, NodeType::VALSTR, @$); $$->value.valC = $1; }
-  ;
-
-BasicValueInt:
-    INTEGER     { $$ = $1; }
-  | '+' INTEGER { $$ = $2; }
-  | '-' INTEGER { $$ = -$2; }
-  ;
-
-BasicValueFloat:
-    FLOAT     { $$ = $1; }
-  | '+' FLOAT { $$ = $2; }
-  | '-' FLOAT { $$ = -$2; }
-  ;
-
-PrefixOperator:
-    '+'  { $$ = getString("+"); /*TODO 2 s/r conflicts*/}
-  | '-'  { $$ = getString("-"); }
-  | '*'  { $$ = getString("*"); }
-  | '&'  { $$ = getString("&"); }
-  | "++" { $$ = getString("++"); }
-  | "--" { $$ = getString("--"); }
-  | '!'  { $$ = getString("!"); }
-  | "!!" { $$ = getString("!!"); }
-  ;
-
-PostfixOperator:
-    "--" { $$ = getString("--"); }
-  | "++" { $$ = getString("++"); }
   ;
 
 CompAssignOperator:

@@ -8,11 +8,10 @@
 
 #include <plog/Log.h>
 
-#include "grammar.hpp"
+#include "types.hpp"
 
 typedef std::pair<std::string, bool> IdPart;
 
-extern std::unique_ptr<Node> parseResult;
 extern std::vector<std::string> strings;
 
 strings_t getString(std::string string);

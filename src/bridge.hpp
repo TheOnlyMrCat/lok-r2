@@ -15,5 +15,5 @@ public:
     int parse(std::string &file);
 };
 
-#define YY_DECL yy::parser::symbol_type yylex(Bridge& bridge)
+#define YY_DECL yy::parser::symbol_type yylex(Bridge *bridge)
 YY_DECL;

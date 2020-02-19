@@ -1,6 +1,7 @@
 #include "util.hpp"
 #include "type.hpp"
 #include "program.hpp"
+#include "grammar.hpp"
 
 #include <algorithm>
 

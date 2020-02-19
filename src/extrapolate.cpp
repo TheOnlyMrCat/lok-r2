@@ -2,6 +2,7 @@
 #include "program.hpp"
 #include "type.hpp"
 #include "util.hpp"
+#include "grammar.hpp"
 
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {

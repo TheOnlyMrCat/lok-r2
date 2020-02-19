@@ -12,7 +12,7 @@ std::unique_ptr<Node> parseResult;
 extern std::FILE *yyin;
 extern int yydebug;
 
-Bridge::Bridge() : parser(*this) {}
+Bridge::Bridge() : parser(this) {}
 
 int Bridge::parse(std::string &filename) {
     yyin = std::fopen(filename.c_str(), "r");
@@ -21,10 +21,10 @@ int Bridge::parse(std::string &filename) {
 	parser.set_debug_level(yydebug);
 #endif
 
-    parseResult = std::unique_ptr<Node>(new Node(0, NodeType::NONE, location));
-    int result = parser();
-    PLOGD << "parse function returned " << result;
-    return result;
+    result = std::unique_ptr<Node>(new Node(0, NodeType::NONE, location));
+    int rt = parser();
+    PLOGD << "parse function returned " << rt;
+    return rt;
 }
 
 #include "nodetypenames.h"
