@@ -109,6 +109,20 @@ public:
 	bool value;
 };
 
+class StringValue : public Expr {
+public:
+	StringValue(std::string);
+
+	std::string value;
+};
+
+class SymbolExpr : public Expr {
+public:
+	SymbolExpr(Identifier, ProgramContext&);
+
+	Symbol symbol;
+};
+
 struct StackFrame {
 	std::vector<Symbol> symbols;
 };

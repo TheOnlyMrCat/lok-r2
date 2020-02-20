@@ -48,16 +48,15 @@ void recursivePrint(std::unique_ptr<Node>& node, std::ofstream& out, int depth) 
         out << '-';
     }
 
-    out << '[' << static_cast<unsigned int>(node->type) << ':' << mapNodeType(node->type) << "] <start:" << node->location.begin.line << ':' << node->location.begin.column << ", end:" << node->location.end.line << '-' << node->location.end.column << '>';
+    out << '[' << static_cast<unsigned int>(node->type) << ':' << mapNodeType(node->type) << "] <start:" << node->location.begin.line << ':' << node->location.begin.column << ", end:" << node->location.end.line << ':' << node->location.end.column << '>';
     switch (node->type) {
         case NodeType::DECL:
         case NodeType::PARAM:
         case NodeType::LIBNAME:
         case NodeType::FILEPATH:
         case NodeType::VALSTR:
-        case NodeType::QUALPART:
+        case NodeType::QUALPATH:
         case NodeType::EXPRBASIC:
-        case NodeType::EXPRASSIG:
         case NodeType::ATTR:
             out << " -- " << strings[node->value.valC];
             break;

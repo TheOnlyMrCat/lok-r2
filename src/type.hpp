@@ -12,11 +12,12 @@ typedef std::unique_ptr<class Node> NodePtr;
 
 struct TypeQualifier {
 	TypeQualifier(NodePtr& node);
-    TypeQualifier(bool, int);
-    TypeQualifier(bool, int, TypeQualifier);
+    TypeQualifier(bool, bool, int);
+    TypeQualifier(bool, bool, int, TypeQualifier);
 
 	val::value_ptr<TypeQualifier> nested;
 	bool isPointer;
+    bool forceUpgrade;
 	int arraySize;
 };
 

@@ -39,7 +39,7 @@ Type::Type(const Type&) = default;
 Type::Type(Type&&) = default;
 Type& Type::operator=(Type&&) = default;
 
-// Node is expected to be of type QUALID
+// Node is expected to be a FullyQualifiedPath
 Identifier::Identifier(NodePtr& node, ProgramContext& context) : parts(context.currentNamespace) {
 	NodePtr *part;
     for (part = &node->children[0]; (*part)->children.size() > 0; part = &(*part)->children[0]) {
@@ -64,8 +64,8 @@ TypeQualifier::TypeQualifier(NodePtr& node) {
 	if (node->children[0]->type != NodeType::NONE) nested = val::value_ptr<TypeQualifier>(node->children[0]);
 }
 
-TypeQualifier::TypeQualifier(bool b, int i): isPointer(b), arraySize(i) {}
-TypeQualifier::TypeQualifier(bool b, int i, TypeQualifier f): isPointer(b), arraySize(i), nested(f) {}
+TypeQualifier::TypeQualifier(bool b, bool f, int i): isPointer(b), forceUpgrade(f), arraySize(i) {}
+TypeQualifier::TypeQualifier(bool b, bool f, int i, TypeQualifier n): isPointer(b), forceUpgrade(f), arraySize(i), nested(n) {}
 
 SingleType::SingleType(NodePtr& node, ProgramContext& pc):
 	id(node->children[0], pc),
@@ -98,6 +98,9 @@ Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(
 
 Symbol::Symbol(Type t, Identifier i): type(t), id(i) {}
 
+//! Requires call of getSymbol twice. Is this fixable?
+SymbolExpr::SymbolExpr(Identifier i, ProgramContext &pc): Expr(getSymbol(i, pc).type), symbol(getSymbol(i, pc)) {}
+
 Expr::Expr(Type t): type(t) {}
 Expr::~Expr() = default;
 
@@ -107,9 +110,10 @@ OpExpr::~OpExpr() {
 	delete right;
 }
 
-IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, size))), value(val) {}
-FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, size))), value(val) {}
+IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
+FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
 BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
+StringValue::StringValue(std::string val): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, val.length(), TypeQualifier(false, true, 0, TypeQualifier(false, false, 8))))), value(val) {}
 
 std::string Symbol::toLokConv() {
 	//TODO

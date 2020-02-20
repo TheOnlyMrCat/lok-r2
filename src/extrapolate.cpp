@@ -92,12 +92,16 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 			}
 			return new OpExpr(lType, left, right, strings[node->value.valC]);
 		}
+		case NodeType::VALSTR:
+			return new StringValue(strings[node->value.valC]);
 		case NodeType::VALINT:
 			return new IntValue(node->value.valI, 64);
 		case NodeType::VALFLOAT:
 			return new FloatValue(node->value.valF, 64);
 		case NodeType::VALBIT:
 			return new BitValue(node->value.valB);
+		case NodeType::FQUALPATH:
+			return new SymbolExpr(Identifier(node, context), context);
 		default:
 			PLOGE << "Unhandled expression type";
 	}

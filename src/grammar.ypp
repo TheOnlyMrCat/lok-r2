@@ -144,13 +144,13 @@ FilePath:
   ;
 
 FullyQualifiedPath:
-    QualifiedPath         { $$ = std::make_unique<Node>(1, NodeType::NONE, @$); addChild($$, $1); }
-  | ID ":>" QualifiedPath { $$ = std::make_unique<Node>(2, NodeType::NONE, @$); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); addChild($$, $3); }
+    QualifiedPath         { $$ = std::make_unique<Node>(1, NodeType::FQUALPATH, @$); addChild($$, $1); }
+  | ID ":>" QualifiedPath { $$ = std::make_unique<Node>(2, NodeType::FQUALPATH, @$); NodePtr libN = std::make_unique<Node>(0, NodeType::LIBNAME, @$); libN->value.valC = $1; addChild($$, libN); addChild($$, $3); }
   ;
 
 QualifiedPath:
-    ID                   { $$ = std::make_unique<Node>(0, NodeType::FILEPATH, @$); $$->value.valC = $1; }
-  | ID "::" QualifiedPath { $$ = std::make_unique<Node>(1, NodeType::FILEPATH, @$); addChild($$, $3); $$->value.valC = $1; }
+    ID                   { $$ = std::make_unique<Node>(0, NodeType::QUALPATH, @$); $$->value.valC = $1; }
+  | ID "::" QualifiedPath { $$ = std::make_unique<Node>(1, NodeType::QUALPATH, @$); addChild($$, $3); $$->value.valC = $1; }
 
 NamespaceItems:
     %empty                       { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
@@ -327,7 +327,7 @@ TypeQualifiers:
     %empty                         { $$ = std::make_unique<Node>(0, NodeType::NONE, @$); }
   | TypeQualifiers '*'             { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALPTR, @$); addChild($$, $1); }
   | TypeQualifiers '[' INTEGER ']' { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); $$->value.valI = $3; addChild($$, $1); }
-  | TypeQualifiers '[' ']'         { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); addChild($$, $1); }
+  | TypeQualifiers '[' ']'         { $$ = std::make_unique<Node>(0, NodeType::TYPEQUALARR, @$); $$->value.valI = -1; addChild($$, $1); }
   ;
 
 TupleType:
@@ -458,9 +458,9 @@ Expression:
   | Expression "<=" Expression               { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<="); addChild($$, $3); }
   | Expression "<=>" Expression              { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<=>"); addChild($$, $3); }
 
-  | Expression '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); addChild($$, $3); }
+  | Expression '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); addChild($$, $3); }
   | Expression CompAssignOperator Expression %prec "CompAssign"
-                                             { $$ = std::make_unique<Node>(2, NodeType::EXPRASSIG, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
+                                             { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   ;
 
 BasicExpression:
