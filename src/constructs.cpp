@@ -60,6 +60,7 @@ bool Identifier::operator< (const Identifier &other) const {
 
 TypeQualifier::TypeQualifier(NodePtr& node) {
 	isPointer = node->type == NodeType::TYPEQUALPTR;
+	forceUpgrade = node->type == NodeType::TYPEQUALUPG;
 	if (node->type == NodeType::TYPEQUALARR) arraySize = node->value.valI;
 	if (node->children[0]->type != NodeType::NONE) nested = val::value_ptr<TypeQualifier>(node->children[0]);
 }
@@ -114,6 +115,12 @@ IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit",
 FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
 BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
 StringValue::StringValue(std::string val): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, val.length(), TypeQualifier(false, true, 0, TypeQualifier(false, false, 8))))), value(val) {}
+FuncValue::FuncValue(ReturningType t, std::vector<Statement*> v): Expr(t), statements(v) {}
+FuncValue::~FuncValue() {
+	for (auto s : statements) {
+		delete s;
+	}
+}
 
 std::string Symbol::toLokConv() {
 	//TODO
@@ -123,6 +130,10 @@ std::string Symbol::toLokConv() {
 		sb += i.first;
 	}
 	return sb;
+}
+
+Value *Statement::codegen() {
+	PLOGF << "Unsupported code generation target";
 }
 
 bad_symbol::bad_symbol(): runtime_error("bad symbol") {}

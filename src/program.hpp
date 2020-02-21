@@ -58,7 +58,11 @@ public:
 	virtual ~Decl();
 };
 
-class Expr {
+class Statement {
+	virtual class Value *codegen();
+};
+
+class Expr : public Statement {
 public:
 	Expr(Type);
 	virtual ~Expr();
@@ -116,6 +120,14 @@ public:
 	std::string value;
 };
 
+class FuncValue : public Expr {
+public:
+	FuncValue(ReturningType, std::vector<Statement*>);
+	~FuncValue();
+
+	std::vector<Statement*> statements;
+};
+
 class SymbolExpr : public Expr {
 public:
 	SymbolExpr(Identifier, ProgramContext&);
@@ -143,5 +155,6 @@ public:
 private:
 	ProgramContext context;
 
+	std::vector<Statement*> _extrapBlock(std::unique_ptr<Node>& node);
 	Expr *_extrapolate(std::unique_ptr<Node>& node);
 };

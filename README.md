@@ -19,8 +19,7 @@ This means that, among other things, exceptions are not able to derive from one 
 and foreach loops can't search for a `begin()` and `end()` function on classes. The main effect this has is to prohibit
 a `main()` function being used as the entry point, so I've replaced it with `run` declarations.
 
-The exceptions to this rule are the primitive types, of which there are only three: `bit`, so there's actually a
-value type, and `class` and `struct` (which are likely to be changed to `type`).
+There is only one exception to this rule: `bit`, which is reserved so I can actually have a value type.
 
 2: **Whitespace anywhere in the code must be entirely optional.**
 In more technical terms, for every valid source input, you must be able to remove all bytes `0x09`, `0x0A` and `0x20` and

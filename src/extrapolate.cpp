@@ -67,9 +67,48 @@ bool checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 	return valid;
 }
 
+std::vector<Statement*> Program::_extrapBlock(std::unique_ptr<Node>& node) {
+	std::vector<Statement*> statements;
+	for (auto& sn : node->children) {
+		switch (sn->type) {
+			case NodeType::EXPRBASIC:
+			case NodeType::FUNCDEF:
+			case NodeType::VALSTR:
+			case NodeType::VALINT:
+			case NodeType::VALFLOAT:
+			case NodeType::VALBIT:
+			case NodeType::FQUALPATH:
+				statements.push_back(static_cast<Statement*>(_extrapolate(sn)));
+				break;
+			default:
+				PLOGF << "Unhandled statement type";
+				throw;
+		}
+	}
+	return statements;
+}
+
 // node is expected to be one of the EXPR node types
 Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 	switch (node->type) {
+		case NodeType::FUNCDEF: {
+			ReturningType type = typeFromFunction(node, context);
+			Type returnedType;
+			std::vector<Statement*> s;
+			StackFrame frame;
+			for (auto& param : node->children[1]->children) {
+				frame.symbols.emplace_back(Type(param->children[0], context), Identifier({{strings[param->value.valC], false}}));
+			}
+			
+			context.stackFrames.emplace_back(frame);
+			if (node->children[0]->type == NodeType::BLOCK) {
+				s = _extrapBlock(node->children[0]);
+			} else {
+				s = {static_cast<Statement*>(_extrapolate(node->children[0]))};
+			}
+			context.stackFrames.pop_back();
+			return new FuncValue(type, s);
+		}
 		case NodeType::EXPRBASIC: {
 			Expr *left = _extrapolate(node->children[0]);
 			Expr *right = _extrapolate(node->children[1]);
@@ -103,7 +142,8 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 		case NodeType::FQUALPATH:
 			return new SymbolExpr(Identifier(node, context), context);
 		default:
-			PLOGE << "Unhandled expression type";
+			PLOGF << "Unhandled expression type";
+			throw; //TODO see above
 	}
 }
 
