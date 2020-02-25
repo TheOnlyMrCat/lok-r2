@@ -6,6 +6,7 @@ install:
 - tar -xf bison-3.5.tar.gz
 - cd bison-3.5; ./configure && make && sudo make install; cd ..
 - sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+- sudo apt-get install libllvm9 llvm-9 llvm-9-dev llvm-9-runtime
 
 script: ./configure && make && make check
 

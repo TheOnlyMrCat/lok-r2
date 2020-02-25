@@ -12,7 +12,7 @@ jobs:
     - name: Get Bison
       run: wget http://ftpmirror.gnu.org/bison/bison-3.5.tar.gz; tar -xzf bison-3.5.tar.gz; cd bison-3.5; ./configure && make && sudo make install; cd ..
     - name: Get LLVM
-      run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+      run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" && sudo apt-get install libllvm9 llvm-9 llvm-9-dev llvm-9-runtime
     - name: Get other libraries
       run: sudo apt-get install libboost-filesystem-dev m4 flex
     - name: Configure environment
