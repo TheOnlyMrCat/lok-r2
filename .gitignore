@@ -3,9 +3,11 @@
 .vscode/
 clok
 autom4te.cache/
+config.cache
 config.h
 config.status
 config.log
+config.h.in~
 **/.deps/
 Makefile
 

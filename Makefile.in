@@ -95,7 +95,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
 	$(top_srcdir)/m4/ax_boost_filesystem.m4 \
 	$(top_srcdir)/m4/ax_boost_system.m4 \
 	$(top_srcdir)/m4/ax_cxx_compile_stdcxx.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/ax_llvm.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -111,8 +111,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_clok_OBJECTS = src/clok-main.$(OBJEXT) src/clok-bridge.$(OBJEXT) \
 	src/clok-constructs.$(OBJEXT) src/clok-extrapolate.$(OBJEXT) \
-	src/clok-util.$(OBJEXT) src/clok-lexer.$(OBJEXT) \
-	src/clok-grammar.$(OBJEXT)
+	src/clok-util.$(OBJEXT) src/clok-codegen.$(OBJEXT) \
+	src/clok-lexer.$(OBJEXT) src/clok-grammar.$(OBJEXT)
 clok_OBJECTS = $(am_clok_OBJECTS)
 am__DEPENDENCIES_1 =
 clok_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -134,7 +134,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/clok-bridge.Po \
-	src/$(DEPDIR)/clok-constructs.Po \
+	src/$(DEPDIR)/clok-codegen.Po src/$(DEPDIR)/clok-constructs.Po \
 	src/$(DEPDIR)/clok-extrapolate.Po \
 	src/$(DEPDIR)/clok-grammar.Po src/$(DEPDIR)/clok-lexer.Po \
 	src/$(DEPDIR)/clok-main.Po src/$(DEPDIR)/clok-util.Po
@@ -471,6 +471,8 @@ LEXLIB = @LEXLIB@
 LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LLVM_CPPFLAGS = @LLVM_CPPFLAGS@
+LLVM_LDFLAGS = @LLVM_LDFLAGS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -541,12 +543,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = $(BOOST_CPPFLAGS)
-AM_LDFLAGS = $(BOOST_LDFLAGS)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(LLVM_CPPFLAGS)
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(LLVM_LDFLAGS)
 AM_YFLAGS = -d -Wno-yacc
 BUILT_SOURCES = src/grammar.hpp src/nodetypenames.h
 EXTRA_DIST = lib test src/nodetypenames.txt
-clok_SOURCES = src/main.cpp src/bridge.cpp src/constructs.cpp src/extrapolate.cpp src/util.cpp src/lexer.lpp src/grammar.ypp src/nodetypenames.txt
+clok_SOURCES = src/main.cpp src/bridge.cpp src/constructs.cpp src/extrapolate.cpp src/util.cpp src/codegen.cpp src/lexer.lpp src/grammar.ypp src/nodetypenames.txt
 clok_CPPFLAGS = -Ilib
 clok_CXXFLAGS = -Wno-deprecated-register
 clok_LDADD = $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB)
@@ -664,6 +666,8 @@ src/clok-extrapolate.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/clok-util.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/clok-codegen.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/clok-lexer.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/grammar.hpp: src/grammar.cpp
@@ -684,6 +688,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-bridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-codegen.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-constructs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-extrapolate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clok-grammar.Po@am__quote@ # am--include-marker
@@ -782,6 +787,20 @@ src/clok-util.obj: src/util.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/util.cpp' object='src/clok-util.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -c -o src/clok-util.obj `if test -f 'src/util.cpp'; then $(CYGPATH_W) 'src/util.cpp'; else $(CYGPATH_W) '$(srcdir)/src/util.cpp'; fi`
+
+src/clok-codegen.o: src/codegen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -MT src/clok-codegen.o -MD -MP -MF src/$(DEPDIR)/clok-codegen.Tpo -c -o src/clok-codegen.o `test -f 'src/codegen.cpp' || echo '$(srcdir)/'`src/codegen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/clok-codegen.Tpo src/$(DEPDIR)/clok-codegen.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/codegen.cpp' object='src/clok-codegen.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -c -o src/clok-codegen.o `test -f 'src/codegen.cpp' || echo '$(srcdir)/'`src/codegen.cpp
+
+src/clok-codegen.obj: src/codegen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -MT src/clok-codegen.obj -MD -MP -MF src/$(DEPDIR)/clok-codegen.Tpo -c -o src/clok-codegen.obj `if test -f 'src/codegen.cpp'; then $(CYGPATH_W) 'src/codegen.cpp'; else $(CYGPATH_W) '$(srcdir)/src/codegen.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/clok-codegen.Tpo src/$(DEPDIR)/clok-codegen.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/codegen.cpp' object='src/clok-codegen.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -c -o src/clok-codegen.obj `if test -f 'src/codegen.cpp'; then $(CYGPATH_W) 'src/codegen.cpp'; else $(CYGPATH_W) '$(srcdir)/src/codegen.cpp'; fi`
 
 src/clok-lexer.o: src/lexer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clok_CPPFLAGS) $(CPPFLAGS) $(clok_CXXFLAGS) $(CXXFLAGS) -MT src/clok-lexer.o -MD -MP -MF src/$(DEPDIR)/clok-lexer.Tpo -c -o src/clok-lexer.o `test -f 'src/lexer.cpp' || echo '$(srcdir)/'`src/lexer.cpp
@@ -1254,6 +1273,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-local mostlyclean-am
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 		-rm -f src/$(DEPDIR)/clok-bridge.Po
+	-rm -f src/$(DEPDIR)/clok-codegen.Po
 	-rm -f src/$(DEPDIR)/clok-constructs.Po
 	-rm -f src/$(DEPDIR)/clok-extrapolate.Po
 	-rm -f src/$(DEPDIR)/clok-grammar.Po
@@ -1308,6 +1328,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
 		-rm -f src/$(DEPDIR)/clok-bridge.Po
+	-rm -f src/$(DEPDIR)/clok-codegen.Po
 	-rm -f src/$(DEPDIR)/clok-constructs.Po
 	-rm -f src/$(DEPDIR)/clok-extrapolate.Po
 	-rm -f src/$(DEPDIR)/clok-grammar.Po

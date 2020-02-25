@@ -5,6 +5,7 @@ install:
 - wget http://ftpmirror.gnu.org/bison/bison-3.5.tar.gz
 - tar -xf bison-3.5.tar.gz
 - cd bison-3.5; ./configure && make && sudo make install; cd ..
+- bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
 
 script: ./configure && make && make check
 
