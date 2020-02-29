@@ -15,6 +15,8 @@ struct TypeQualifier {
     TypeQualifier(bool, bool, int);
     TypeQualifier(bool, bool, int, TypeQualifier);
 
+    bool operator==(const TypeQualifier& other) const;
+
 	val::value_ptr<TypeQualifier> nested;
 	bool isPointer;
     bool forceUpgrade;
@@ -27,6 +29,8 @@ public:
     SingleType(Identifier, TypeQualifier);
     SingleType(Identifier);
 
+    bool operator==(const SingleType&) const;
+
     Identifier id;
     val::value_ptr<TypeQualifier> qualifier;
 };
@@ -36,6 +40,8 @@ public:
     TupleType(NodePtr& node, ProgramContext& pc);
     TupleType(std::vector<Type>);
 
+    bool operator==(const TupleType&) const;
+
     std::vector<Type> types;
 };
 
@@ -43,6 +49,8 @@ class ReturningType {
 public:
     ReturningType(NodePtr& node, ProgramContext& pc);
     ReturningType(TupleType, Type);
+
+    bool operator==(const ReturningType&) const;
 
     TupleType input;
     Type output;

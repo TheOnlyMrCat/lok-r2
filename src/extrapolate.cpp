@@ -92,6 +92,7 @@ std::vector<Statement*> Program::_extrapBlock(std::unique_ptr<Node>& node) {
 Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 	switch (node->type) {
 		case NodeType::FUNCDEF: {
+			PLOGD << "A function definition, containing...";
 			ReturningType type = typeFromFunction(node, context);
 			Type returnedType;
 			std::vector<Statement*> s;
@@ -107,15 +108,18 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 				s = {static_cast<Statement*>(_extrapolate(node->children[0]))};
 			}
 			context.stackFrames.pop_back();
+			PLOGD << "...nothing else";
 			return new FuncValue(type, s);
 		}
 		case NodeType::EXPRBASIC: {
+			PLOGD << "A basic expression, containing...";
 			Expr *left = _extrapolate(node->children[0]);
 			Expr *right = _extrapolate(node->children[1]);
 			Type lType = left->type;
 			Type rType = right->type;
 			bool valid = true;
 			std::string op = strings[node->value.valC];
+			PLOGD << "...with operator " << op;
 			if (lType.typeType == 1) {
 				if (rType.typeType != 1) {
 					PLOGE << "Bad"; //TODO link error with yy::parser::error
@@ -127,19 +131,24 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 					PLOGE << "Disappointing"; //TODO see above
 					throw;
 				}
-				valid = checkForOverload(*lType.basic, *rType.basic, op, context);
+				valid = checkForOverload(*lType.basic, *rType.basic, op, context); //TODO get type returned
 			}
 			return new OpExpr(lType, left, right, strings[node->value.valC]);
 		}
 		case NodeType::VALSTR:
+			PLOGD << "A string literal";
 			return new StringValue(strings[node->value.valC]);
 		case NodeType::VALINT:
+			PLOGD << "An integer literal";
 			return new IntValue(node->value.valI, 64);
 		case NodeType::VALFLOAT:
+			PLOGD << "A float literal";
 			return new FloatValue(node->value.valF, 64);
 		case NodeType::VALBIT:
+			PLOGD << "A bit literal";
 			return new BitValue(node->value.valB);
 		case NodeType::FQUALPATH:
+			PLOGD << "A symbol reference to...";
 			return new SymbolExpr(Identifier(node, context), context);
 		default:
 			PLOGF << "Unhandled expression type";
@@ -156,7 +165,15 @@ void Program::extrapolate(std::unique_ptr<Node>& tree) {
 				expectedType = Type(node->children[0], context);
 				expressionIndex = 1;
 			}
-			_extrapolate(node->children[expressionIndex]);
+			Expr *extrapolated = _extrapolate(node->children[expressionIndex]);
+			if (expectedType.typeType != -1 && !(extrapolated->type == expectedType)) {
+				//TODO check for conversion
+				PLOGE << "No bad type doesn't match";
+				throw; //TODO see above
+			}
+			Symbol *s = &context.symbols.find(Symbol(node, false, context).id)->second;
+			s->type = expectedType;
+			extrapolatedSymbols.push_back({s, extrapolated});
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], context).parts;
 			extrapolate(node->children[1]);

@@ -15,14 +15,13 @@ struct ProgramContext;
 struct Type {
 	Type();
 	Type(NodePtr& node, ProgramContext& pc);
-	Type(Type&&);
-	Type(const Type&);
 	Type(SingleType);
 	Type(TupleType);
 	Type(ReturningType);
 	~Type();
 
-    Type& operator=(Type&&);
+	Type& operator=(const Type&);
+	bool operator==(const Type&) const;
 
     int typeType;
     val::value_ptr<SingleType> basic;
@@ -75,19 +74,6 @@ public:
 	~OpExpr() override;
 
 	Expr *left;
-	Expr *right;
-	std::string op;
-};
-
-class AssigExpr : public Expr {
-public:
-	Symbol variable;
-	Expr *right;
-};
-
-class CompAssigExpr : public Expr {
-public:
-	Symbol variable;
 	Expr *right;
 	std::string op;
 };
@@ -147,6 +133,11 @@ struct ProgramContext {
 	std::vector<Decl> declarations;
 };
 
+struct ExtrapSymbol {
+	Symbol *s;
+	Expr *value;
+};
+
 class Program {
 public:
 	void findSymbols(std::unique_ptr<Node>& tree);
@@ -154,6 +145,8 @@ public:
 
 private:
 	ProgramContext context;
+
+	std::vector<ExtrapSymbol> extrapolatedSymbols;
 
 	std::vector<Statement*> _extrapBlock(std::unique_ptr<Node>& node);
 	Expr *_extrapolate(std::unique_ptr<Node>& node);

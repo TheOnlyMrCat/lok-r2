@@ -1379,7 +1379,7 @@ src/nodetypenames.h: src/nodetypenames.txt
 	xxd -i src/nodetypenames.txt > src/nodetypenames.h
 
 clean-local:
-	rm -f src/grammar.cpp src/grammar.hpp src/grammar.output src/lexer.cpp src/location.hh
+	rm -f src/grammar.cpp src/grammar.hpp src/grammar.output src/lexer.cpp location.hh
 
 debug: YFLAGS += -Dparse.trace --report state
 debug: LFLAGS += --debug

@@ -13,39 +13,96 @@ Type::Type(NodePtr& node, ProgramContext& pc) {
 	switch (node->type) {
 		case NodeType::TYPESINGLE:
 			typeType = 0;
-			basic = val::value_ptr<SingleType>(SingleType(node, pc));
+			basic = SingleType(node, pc);
 			break;
 		case NodeType::TYPEMULTI:
 			typeType = 1;
-			tuple = val::value_ptr<TupleType>(TupleType(node, pc));
+			tuple = TupleType(node, pc);
 			break;
 		case NodeType::TYPEFN:
 			typeType = 2;
-			func = val::value_ptr<ReturningType>(ReturningType(node, pc));
+			func = ReturningType(node, pc);
 			break;
 		default:
-			PLOGF << "I sincerely hope that this never happens";
-			exit(1);
+			PLOGF << "Unexpected node type when constructing type";
+			throw;
 	}
 }
 
-Type::Type(SingleType t): typeType(0), basic(t) {}
-Type::Type(TupleType t): typeType(1), tuple(t) {}
-Type::Type(ReturningType t): typeType(2), func(t) {}
+Type::Type(SingleType t): typeType(0), basic(new SingleType(t)) {}
+Type::Type(TupleType t): typeType(1), tuple(new TupleType(t)) {}
+Type::Type(ReturningType t): typeType(2), func(new ReturningType(t)) {}
 
 Type::~Type() = default;
 
-Type::Type(const Type&) = default;
-Type::Type(Type&&) = default;
-Type& Type::operator=(Type&&) = default;
+Type& Type::operator=(const Type& other) {
+	switch (other.typeType) {
+		case 0:
+			typeType = 0;
+			basic = other.basic;
+			// tuple = val::value_ptr<TupleType>(nullptr);
+			// func = val::value_ptr<ReturningType>(nullptr);
+			break;
+		case 1:
+			typeType = 1;
+			// basic = val::value_ptr<SingleType>(nullptr);
+			tuple = other.tuple;
+			// func = val::value_ptr<ReturningType>(nullptr);
+			break;
+		case 2:
+			typeType = 2;
+			// basic = val::value_ptr<SingleType>(nullptr);
+			// tuple = val::value_ptr<TupleType>(nullptr);
+			func = other.func;
+			break;
+		default:
+			typeType = -1;
+			// basic = val::value_ptr<SingleType>(nullptr);
+			// tuple = val::value_ptr<TupleType>(nullptr);
+			// func = val::value_ptr<ReturningType>(nullptr);
+			break;
+	}
+	return *this;
+}
+
+bool Type::operator==(const Type& other) const {
+	if (typeType != other.typeType && typeType != -1 && other.typeType != -1) return false;
+	switch (typeType) {
+		case 0:
+			return basic->operator==(*other.basic);
+		case 1:
+			return tuple->operator==(*other.tuple);
+		case 2:
+			return func->operator==(*other.func);
+		default:
+			throw;
+	}
+}
+
+bool SingleType::operator==(const SingleType& other) const {
+	return id == other.id && ((qualifier.get() != nullptr && other.qualifier.get() != nullptr) ? qualifier->operator==(*other.qualifier) : qualifier == other.qualifier);
+}
+
+bool TupleType::operator==(const TupleType& other) const {
+	return types == other.types;
+}
+
+bool ReturningType::operator==(const ReturningType& other) const {
+	return input == other.input && output == other.output;
+}
+
+bool TypeQualifier::operator==(const TypeQualifier& other) const {
+	return isPointer == other.isPointer && forceUpgrade == other.forceUpgrade && arraySize == other.arraySize
+		&& (nested.get() != nullptr && other.nested.get() != nullptr) ? nested->operator==(*other.nested) : nested == other.nested;
+}
 
 // Node is expected to be a FullyQualifiedPath
 Identifier::Identifier(NodePtr& node, ProgramContext& context) : parts(context.currentNamespace) {
-	NodePtr *part;
-    for (part = &node->children[0]; (*part)->children.size() > 0; part = &(*part)->children[0]) {
-        parts.push_back({strings[(*part)->value.valC], false}); //TODO: Resolve types
+	Node *part;
+    for (part = node->children[0].get(); part->children.size() > 0; part = part->children[0].get()) {
+        parts.push_back({strings[part->value.valC], false}); //TODO: Resolve types
     }
-	parts.push_back({strings[(*part)->value.valC], false});
+	parts.push_back({strings[part->value.valC], false});
 }
 
 Identifier::Identifier(std::vector<IdPart> parts): parts(parts) {}
@@ -54,7 +111,7 @@ bool Identifier::operator==(const Identifier &other) const {
 	return parts == other.parts;
 }
 
-bool Identifier::operator< (const Identifier &other) const {
+bool Identifier::operator<(const Identifier &other) const {
 	return parts < other.parts;
 }
 
@@ -134,6 +191,7 @@ std::string Symbol::toLokConv() {
 
 Value *Statement::codegen() {
 	PLOGF << "Unsupported code generation target";
+	throw;
 }
 
 bad_symbol::bad_symbol(): runtime_error("bad symbol") {}
