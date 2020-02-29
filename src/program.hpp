@@ -30,7 +30,7 @@ struct Type {
 };
 
 struct Identifier {
-	Identifier(NodePtr& node, ProgramContext& context);
+	Identifier(NodePtr& node, bool ignoreCurrentNamespace, ProgramContext& context);
 	Identifier(std::vector<IdPart> parts);
 
 	bool operator== (const Identifier &other) const;

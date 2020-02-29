@@ -38,6 +38,7 @@ struct/[^A-Za-z0-9_]    { return yy::parser::make_STRUCTK(lok); }
 class/[^A-Za-z0-9_]     { return yy::parser::make_CLASSK(lok); }
 namespace/[^A-Za-z0-9_] { return yy::parser::make_NAMESPACEK(lok); }
 operator/[^A-Za-z0-9_]  { return yy::parser::make_OPERATORK(lok); }
+return/[^A-Za-z0-9_]    { return yy::parser::make_RETURNK(lok); }
 
 else/(if[^A-Za-z0-9_]|[^A-Za-z0-9_]) { return yy::parser::make_ELSEK(lok); }
 

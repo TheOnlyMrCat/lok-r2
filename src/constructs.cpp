@@ -97,7 +97,7 @@ bool TypeQualifier::operator==(const TypeQualifier& other) const {
 }
 
 // Node is expected to be a FullyQualifiedPath
-Identifier::Identifier(NodePtr& node, ProgramContext& context) : parts(context.currentNamespace) {
+Identifier::Identifier(NodePtr& node, bool ignore, ProgramContext& context) : parts(ignore ? std::vector<IdPart>() : context.currentNamespace) {
 	Node *part;
     for (part = node->children[0].get(); part->children.size() > 0; part = part->children[0].get()) {
         parts.push_back({strings[part->value.valC], false}); //TODO: Resolve types
@@ -126,7 +126,7 @@ TypeQualifier::TypeQualifier(bool b, bool f, int i): isPointer(b), forceUpgrade(
 TypeQualifier::TypeQualifier(bool b, bool f, int i, TypeQualifier n): isPointer(b), forceUpgrade(f), arraySize(i), nested(n) {}
 
 SingleType::SingleType(NodePtr& node, ProgramContext& pc):
-	id(node->children[0], pc),
+	id(node->children[0], false, pc),
 	qualifier(node->children[1]->type != NodeType::NONE ? val::value_ptr<TypeQualifier>(node->children[1]) : val::value_ptr<TypeQualifier>(nullptr))
 {}
 

@@ -31,7 +31,7 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			Symbol s = Symbol(typeFromFunction(node->children[0], context), overloadname);
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
 		} else if (node->type == NodeType::NAMESPACE) {
-			context.currentNamespace = Identifier(node->children[0], context).parts;
+			context.currentNamespace = Identifier(node->children[0], true, context).parts;
 			findSymbols(node->children[1]);
 			context.currentNamespace.clear();
 		}
@@ -149,7 +149,7 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 			return new BitValue(node->value.valB);
 		case NodeType::FQUALPATH:
 			PLOGD << "A symbol reference to...";
-			return new SymbolExpr(Identifier(node, context), context);
+			return new SymbolExpr(Identifier(node, true, context), context);
 		default:
 			PLOGF << "Unhandled expression type";
 			throw; //TODO see above
@@ -175,7 +175,7 @@ void Program::extrapolate(std::unique_ptr<Node>& tree) {
 			s->type = expectedType;
 			extrapolatedSymbols.push_back({s, extrapolated});
 		} else if (node->type == NodeType::NAMESPACE) {
-			context.currentNamespace = Identifier(node->children[0], context).parts;
+			context.currentNamespace = Identifier(node->children[0], true, context).parts;
 			extrapolate(node->children[1]);
 			context.currentNamespace.clear();
 		}

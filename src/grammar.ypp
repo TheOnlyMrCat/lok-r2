@@ -74,7 +74,8 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
 
-%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace" DELETEK "delete" OPERATORK "operator"
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace"
+%token DELETEK "delete" OPERATORK "operator" RETURNK "return"
 
 %type <strings_t> CompAssignOperator
 %type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath FullyQualifiedPath QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
@@ -418,7 +419,7 @@ WhileStatement:
   ;
 
 ReturnStatement:
-    "return" '(' Expression ')' { $$ = std::make_unique<Node>(1, NodeType::STMTRTN, @$); addChild($$, $3); }
+    "return" '(' Expression ')' ';' { $$ = std::make_unique<Node>(1, NodeType::STMTRTN, @$); addChild($$, $3); }
 	;
 
 Expression:
