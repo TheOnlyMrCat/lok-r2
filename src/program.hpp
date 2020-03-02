@@ -134,8 +134,11 @@ struct ProgramContext {
 };
 
 struct ExtrapSymbol {
+	void destroy();
+
 	Symbol *s;
 	Expr *value;
+	bool destroySymbol = false;
 };
 
 class Program {

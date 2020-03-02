@@ -165,19 +165,40 @@ void Program::extrapolate(std::unique_ptr<Node>& tree) {
 				expectedType = Type(node->children[0], context);
 				expressionIndex = 1;
 			}
-			Expr *extrapolated = _extrapolate(node->children[expressionIndex]);
-			if (expectedType.typeType != -1 && !(extrapolated->type == expectedType)) {
-				//TODO check for conversion
-				PLOGE << "No bad type doesn't match";
-				throw; //TODO see above
+			if (node->children.size() < expressionIndex) {
+				Expr *extrapolated = _extrapolate(node->children[expressionIndex]);
+				if (expectedType.typeType != -1 && !(extrapolated->type == expectedType)) {
+					//TODO check for conversion
+					PLOGE << "No bad type doesn't match";
+					throw; //TODO see above
+				}
+				Symbol *s = &context.symbols.find(Symbol(node, false, context).id)->second;
+				s->type = expectedType;
+				extrapolatedSymbols.push_back({s, extrapolated});
 			}
-			Symbol *s = &context.symbols.find(Symbol(node, false, context).id)->second;
-			s->type = expectedType;
-			extrapolatedSymbols.push_back({s, extrapolated});
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], true, context).parts;
 			extrapolate(node->children[1]);
 			context.currentNamespace.clear();
+		} else if (node->type == NodeType::RUN) {
+			extrapolatedSymbols.push_back({new Symbol(typeFromFunction(node->children[0], context), Identifier({{"run", false}, {"0", false}})), _extrapolate(node->children[0]), true});
+		} else if (node->type == NodeType::TYPEDECL) {
+			auto oldNamespace = std::vector<IdPart>(context.currentNamespace);
+			context.currentNamespace.push_back({strings[node->value.valC], true});
+			extrapolate(node->children[0]->children[0]);
+			context.currentNamespace = oldNamespace;
+		} else if (node->type == NodeType::OPOVERLOAD) {
+			auto overloadname = std::vector<IdPart>(context.currentNamespace);
+			overloadname.emplace_back(strings[node->value.valC], false);
+			Symbol *s = &context.symbols.find(Identifier(overloadname))->second;
+			extrapolatedSymbols.push_back({s, _extrapolate(node->children[0])});
 		}
+		//  else if (node->type == NodeType::CTORDEF) {
+		// 	auto ctorname = std::vector<IdPart>(context.currentNamespace);
+		// 	ctorname.emplace_back("new", false);
+		// 	Symbol *s = &context.symbols.find(Identifier(ctorname))->second;
+		// 	extrapolatedSymbols.push_back({s, _extrapolate()})
+		// }
+		//TODO
 	}
 }

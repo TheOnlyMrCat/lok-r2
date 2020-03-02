@@ -159,13 +159,25 @@ Symbol::Symbol(Type t, Identifier i): type(t), id(i) {}
 //! Requires call of getSymbol twice. Is this fixable?
 SymbolExpr::SymbolExpr(Identifier i, ProgramContext &pc): Expr(getSymbol(i, pc).type), symbol(getSymbol(i, pc)) {}
 
+void ExtrapSymbol::destroy() {
+	if (destroySymbol && s) {
+		delete s;
+		s = nullptr;
+	}
+	if (value) delete value;
+	value = nullptr;
+}
+
 Expr::Expr(Type t): type(t) {}
 Expr::~Expr() = default;
 
 OpExpr::OpExpr(Type t, Expr *l, Expr *r, std::string o): Expr(t), left(std::move(l)), right(std::move(r)), op(o) {}
 OpExpr::~OpExpr() {
-	delete left;
-	delete right;
+	if (left) delete left;
+	if (right) delete right;
+
+	left = nullptr;
+	right = nullptr;
 }
 
 IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
