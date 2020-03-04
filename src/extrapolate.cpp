@@ -67,73 +67,128 @@ bool checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 	return valid;
 }
 
-std::vector<Statement*> Program::_extrapBlock(std::unique_ptr<Node>& node) {
-	std::vector<Statement*> statements;
-	for (auto& sn : node->children) {
-		switch (sn->type) {
-			case NodeType::EXPRBASIC:
-			case NodeType::FUNCDEF:
-			case NodeType::VALSTR:
-			case NodeType::VALINT:
-			case NodeType::VALFLOAT:
-			case NodeType::VALBIT:
-			case NodeType::FQUALPATH:
-				statements.push_back(static_cast<Statement*>(_extrapolate(sn)));
-				break;
-			default:
-				PLOGF << "Unhandled statement type";
-				throw;
+Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
+	Statement *s;
+	switch (node->type) {
+		case NodeType::DECL: {
+			PLOGD << "A variable declaration";
+			Identifier id = Identifier({{strings[node->value.valC], false}});
+			Type type;
+			int expressionIndex = 0;
+			if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
+				type = Type(node->children[0], context);
+				expressionIndex = 1;
+			}
+			if (node->children.size() <= expressionIndex || node->children[expressionIndex]->type == NodeType::ATTRS) {
+				Expr *expr = _extrapolate(node->children[expressionIndex]);
+				if (type.typeType != -1 && !(expr->type == type)) {
+					PLOGE << "No bad type doesn't match";
+					throw;
+				} else {
+					type = expr->type;
+				}
+				return new DeclStmt(id, type, expr);
+			} else {
+				context.stackFrames.back().symbols.emplace_back(type, id);
+				return new DeclStmt(id, type, nullptr);
+			}
 		}
+		case NodeType::BLOCK: {
+			std::vector<Statement*> statements;
+			for (auto& n : node->children) {
+				statements.push_back(_extrapStmt(n));
+			}
+			return new BlockStmt(statements);
+		}
+		case NodeType::STMTDOWHILE:
+		case NodeType::STMTWHILE:
+			PLOGD << "A while statement, containing...";
+			s = new WhileStmt(_extrapolate(node->children[0]), _extrapStmt(node->children[0]), node->type == NodeType::STMTDOWHILE);
+			PLOGD << "... (while) nothing else";
+			return s;
+		case NodeType::STMTDOFOR:
+			PLOGD << "A for statement, containing...";
+			s = new ForStmt(node->children.size() > 2 ? _extrapStmt(node->children[2]) : nullptr, _extrapolate(node->children[0]->children[0]), _extrapolate(node->children[0]->children[1]), _extrapStmt(node->children[1]), true);
+			PLOGD << "... (for) nothing else";
+			return s;
+		case NodeType::STMTFOR:
+			PLOGD << "A for statement, containing...";
+			s = new ForStmt(_extrapStmt(node->children[0]->children[0]), _extrapolate(node->children[0]->children[1]), _extrapolate(node->children[0]->children[2]), _extrapStmt(node->children[1]), false);
+			PLOGD << "... (for) nothing else";
+			return s;
+		case NodeType::STMTRTN:
+			PLOGD << "A return statement:";
+			return new ReturnStmt(_extrapolate(node->children[0]));
+		case NodeType::STMTIF:
+			PLOGD << "An if statement, containing...";
+			s = new IfStmt(_extrapolate(node->children[0]), _extrapStmt(node->children[1]), node->children.size() > 2 ? _extrapStmt(node->children[2]) : nullptr);
+			PLOGD << "... (if) nothing else";
+			return s;
+		case NodeType::EXPRBASIC:
+		case NodeType::FUNCDEF:
+		case NodeType::VALSTR:
+		case NodeType::VALINT:
+		case NodeType::VALFLOAT:
+		case NodeType::VALBIT:
+		case NodeType::FQUALPATH:
+			return _extrapolate(node);
+			break;
+		case NodeType::NONE:
+			return nullptr;
+		default:
+			PLOGF << "Unhandled statement type";
+			throw;
 	}
-	return statements;
 }
 
-// node is expected to be one of the EXPR node types
+// node is expected to be something that can parse into an expression
 Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 	switch (node->type) {
 		case NodeType::FUNCDEF: {
 			PLOGD << "A function definition, containing...";
 			ReturningType type = typeFromFunction(node, context);
 			Type returnedType;
-			std::vector<Statement*> s;
 			StackFrame frame;
 			for (auto& param : node->children[1]->children) {
 				frame.symbols.emplace_back(Type(param->children[0], context), Identifier({{strings[param->value.valC], false}}));
 			}
 			
 			context.stackFrames.emplace_back(frame);
-			if (node->children[0]->type == NodeType::BLOCK) {
-				s = _extrapBlock(node->children[0]);
-			} else {
-				s = {static_cast<Statement*>(_extrapolate(node->children[0]))};
-			}
+			Statement *s = _extrapStmt(node->children[0]);
 			context.stackFrames.pop_back();
-			PLOGD << "...nothing else";
+			PLOGD << "... (func) nothing else";
 			return new FuncValue(type, s);
 		}
 		case NodeType::EXPRBASIC: {
 			PLOGD << "A basic expression, containing...";
 			Expr *left = _extrapolate(node->children[0]);
-			Expr *right = _extrapolate(node->children[1]);
-			Type lType = left->type;
-			Type rType = right->type;
-			bool valid = true;
-			std::string op = strings[node->value.valC];
-			PLOGD << "...with operator " << op;
-			if (lType.typeType == 1) {
-				if (rType.typeType != 1) {
-					PLOGE << "Bad"; //TODO link error with yy::parser::error
-					throw; //TODO Throw something
+			if (node->children.size() > 1) {
+				Expr *right = _extrapolate(node->children[1]);
+				Type lType = left->type;
+				Type rType = right->type;
+				bool valid = true;
+				std::string op = strings[node->value.valC];
+				PLOGD << "... (expr) with operator " << op;
+				if (lType.typeType == 1) {
+					if (rType.typeType != 1) {
+						PLOGE << "Bad"; //TODO link error with yy::parser::error
+						throw; //TODO Throw something
+					}
+					valid = checkTuple(*lType.tuple, *rType.tuple, op, context);
+				} else if (lType.typeType == 0) {
+					if (rType.typeType != 0) {
+						PLOGE << "Disappointing"; //TODO see above
+						throw;
+					}
+					valid = checkForOverload(*lType.basic, *rType.basic, op, context); //TODO get type returned
 				}
-				valid = checkTuple(*lType.tuple, *rType.tuple, op, context);
-			} else if (lType.typeType == 0) {
-				if (rType.typeType != 0) {
-					PLOGE << "Disappointing"; //TODO see above
-					throw;
-				}
-				valid = checkForOverload(*lType.basic, *rType.basic, op, context); //TODO get type returned
+				return new OpExpr(lType, left, right, strings[node->value.valC]);
+			} else {
+				std::string op = strings[node->value.valC];
+				PLOGD << "... (expr) with " << (node->value.valB ? "postfix" : "prefix") << " operator " << op;
+				//TODO return something and check for overloads
+				return nullptr;
 			}
-			return new OpExpr(lType, left, right, strings[node->value.valC]);
 		}
 		case NodeType::VALSTR:
 			PLOGD << "A string literal";
@@ -150,6 +205,8 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 		case NodeType::FQUALPATH:
 			PLOGD << "A symbol reference to...";
 			return new SymbolExpr(Identifier(node, true, context), context);
+		case NodeType::NONE:
+			return nullptr;
 		default:
 			PLOGF << "Unhandled expression type";
 			throw; //TODO see above

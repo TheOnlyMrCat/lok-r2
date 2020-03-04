@@ -184,12 +184,18 @@ IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit",
 FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
 BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
 StringValue::StringValue(std::string val): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, val.length(), TypeQualifier(false, true, 0, TypeQualifier(false, false, 8))))), value(val) {}
-FuncValue::FuncValue(ReturningType t, std::vector<Statement*> v): Expr(t), statements(v) {}
+FuncValue::FuncValue(ReturningType t, Statement *v): Expr(t), statement(v) {}
 FuncValue::~FuncValue() {
-	for (auto s : statements) {
-		delete s;
-	}
+	if (statement) delete statement;
+	statement = nullptr;
 }
+
+ReturnStmt::ReturnStmt(Expr* x) : expr(x) {}
+BlockStmt::BlockStmt(std::vector<Statement*> stmts) : statements(stmts) {}
+IfStmt::IfStmt(Expr* x, Statement* s1, Statement* s2) : ifexpr(x), iftrue(s1), ifnot(s2) {}
+WhileStmt::WhileStmt(Expr* x, Statement* s, bool b) : cond(x), body(s), isDo(b) {}
+ForStmt::ForStmt(Statement *s1, Expr* x1, Expr* x2, Statement* s2, bool b) : decl(s1), cond(x1), inc(x2), body(s2), isDo(b) {}
+DeclStmt::DeclStmt(Identifier i, Type t, Expr* x) : id(i), type(t), value(x) {}
 
 std::string Symbol::toLokConv() {
 	//TODO

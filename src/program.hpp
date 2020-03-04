@@ -10,6 +10,8 @@ struct SingleType;
 struct TupleType;
 struct ReturningType;
 
+struct Value;
+
 struct ProgramContext;
 
 struct Type {
@@ -58,7 +60,7 @@ public:
 };
 
 class Statement {
-	virtual class Value *codegen();
+	virtual Value *codegen();
 };
 
 class Expr : public Statement {
@@ -66,6 +68,58 @@ public:
 	Expr(Type);
 	virtual ~Expr();
 	Type type;
+};
+
+class DeclStmt : public Statement {
+public:
+	DeclStmt(Identifier, Type, Expr*);
+
+	Identifier id;
+	Type type;
+	Expr* value;
+};
+
+class BlockStmt : public Statement {
+public:
+	BlockStmt(std::vector<Statement*>);
+
+	std::vector<Statement*> statements;
+};
+
+class IfStmt : public Statement {
+public:
+	IfStmt(Expr*, Statement*, Statement*);
+
+	Expr *ifexpr;
+	Statement* iftrue;
+	Statement* ifnot;
+};
+
+class ReturnStmt : public Statement {
+public:
+	ReturnStmt(Expr*);
+
+	Expr *expr;
+};
+
+class WhileStmt : public Statement {
+public:
+	WhileStmt(Expr*, Statement*, bool);
+
+	Expr *cond;
+	Statement *body;
+	bool isDo;
+};
+
+class ForStmt : public Statement {
+public:
+	ForStmt(Statement*, Expr*, Expr*, Statement*, bool);
+
+	Statement* decl;
+	Expr* cond;
+	Expr* inc;
+	Statement* body;
+	bool isDo;
 };
 
 class OpExpr : public Expr {
@@ -108,10 +162,10 @@ public:
 
 class FuncValue : public Expr {
 public:
-	FuncValue(ReturningType, std::vector<Statement*>);
+	FuncValue(ReturningType, Statement*);
 	~FuncValue();
 
-	std::vector<Statement*> statements;
+	Statement *statement;
 };
 
 class SymbolExpr : public Expr {
@@ -151,6 +205,6 @@ private:
 
 	std::vector<ExtrapSymbol> extrapolatedSymbols;
 
-	std::vector<Statement*> _extrapBlock(std::unique_ptr<Node>& node);
+	Statement *_extrapStmt(std::unique_ptr<Node>& node);
 	Expr *_extrapolate(std::unique_ptr<Node>& node);
 };

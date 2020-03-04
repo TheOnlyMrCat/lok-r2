@@ -460,7 +460,7 @@ Expression:
   | Expression "<=" Expression               { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<="); addChild($$, $3); }
   | Expression "<=>" Expression              { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("<=>"); addChild($$, $3); }
 
-  | Expression '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); addChild($$, $3); }
+  | Expression '=' Expression                { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = getString("="); addChild($$, $3); }
   | Expression CompAssignOperator Expression %prec "CompAssign"
                                              { $$ = std::make_unique<Node>(2, NodeType::EXPRBASIC, @$); addChild($$, $1); $$->value.valC = $2; addChild($$, $3); }
   ;
