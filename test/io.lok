@@ -1,0 +1,4 @@
+namespace(std::out)
+
+println: (i32) ->;
+printfln: (string, i32, i32) ->;

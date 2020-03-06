@@ -43,5 +43,10 @@ Symbol getSymbol(Identifier id, ProgramContext& pc) {
         PLOGD << "Found symbol";
         return symbol->second;
     }
+    auto xSymbolMap = std::find_if(pc.externalSymbols.begin(), pc.externalSymbols.end(), [&id](const std::pair<std::string, std::map<Identifier, Symbol>> &m) { return m.second.find(id) != m.second.end(); });
+    if (xSymbolMap != pc.externalSymbols.end()) {
+        PLOGD << "Found external symbol";
+        return xSymbolMap->second.at(id);
+    }
     throw bad_symbol();
 }

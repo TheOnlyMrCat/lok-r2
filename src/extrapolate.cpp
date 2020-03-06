@@ -4,6 +4,9 @@
 #include "util.hpp"
 #include "grammar.hpp"
 
+#include <boost/filesystem.hpp>
+namespace bfs = boost::filesystem;
+
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {
 		if (node->type == NodeType::DECL) {
@@ -79,25 +82,26 @@ Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
 				type = Type(node->children[0], context);
 				expressionIndex = 1;
 			}
-			if (node->children.size() <= expressionIndex || node->children[expressionIndex]->type == NodeType::ATTRS) {
-				Expr *expr = _extrapolate(node->children[expressionIndex]);
+			Expr *expr = nullptr;
+			if (node->children.size() > expressionIndex && node->children[expressionIndex]->type != NodeType::ATTRS) {
+				expr = _extrapolate(node->children[expressionIndex]);
 				if (type.typeType != -1 && !(expr->type == type)) {
 					PLOGE << "No bad type doesn't match";
 					throw;
 				} else {
 					type = expr->type;
 				}
-				return new DeclStmt(id, type, expr);
-			} else {
-				context.stackFrames.back().symbols.emplace_back(type, id);
-				return new DeclStmt(id, type, nullptr);
 			}
+			context.stackFrames.back().symbols.emplace_back(type, id);
+			return new DeclStmt(id, type, nullptr);
 		}
 		case NodeType::BLOCK: {
 			std::vector<Statement*> statements;
+			context.stackFrames.emplace_back();
 			for (auto& n : node->children) {
 				statements.push_back(_extrapStmt(n));
 			}
+			context.stackFrames.pop_back();
 			return new BlockStmt(statements);
 		}
 		case NodeType::STMTDOWHILE:
@@ -108,12 +112,16 @@ Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
 			return s;
 		case NodeType::STMTDOFOR:
 			PLOGD << "A for statement, containing...";
+			context.stackFrames.emplace_back();
 			s = new ForStmt(node->children.size() > 2 ? _extrapStmt(node->children[2]) : nullptr, _extrapolate(node->children[0]->children[0]), _extrapolate(node->children[0]->children[1]), _extrapStmt(node->children[1]), true);
+			context.stackFrames.pop_back();
 			PLOGD << "... (for) nothing else";
 			return s;
 		case NodeType::STMTFOR:
 			PLOGD << "A for statement, containing...";
+			context.stackFrames.emplace_back();
 			s = new ForStmt(_extrapStmt(node->children[0]->children[0]), _extrapolate(node->children[0]->children[1]), _extrapolate(node->children[0]->children[2]), _extrapStmt(node->children[1]), false);
+			context.stackFrames.pop_back();
 			PLOGD << "... (for) nothing else";
 			return s;
 		case NodeType::STMTRTN:
@@ -132,7 +140,6 @@ Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
 		case NodeType::VALBIT:
 		case NodeType::FQUALPATH:
 			return _extrapolate(node);
-			break;
 		case NodeType::NONE:
 			return nullptr;
 		default:
@@ -190,6 +197,15 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 				return nullptr;
 			}
 		}
+		case NodeType::ARGLIST: {
+			PLOGD << "An argument list, containing...";
+			std::vector<Expr*> exprs;
+			for (auto& child : node->children) {
+				exprs.push_back(_extrapolate(child));
+			}
+			PLOGD << "... (args) nothing else";
+			return new ArgsExpr(exprs);
+		}
 		case NodeType::VALSTR:
 			PLOGD << "A string literal";
 			return new StringValue(strings[node->value.valC]);
@@ -213,7 +229,7 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 	}
 }
 
-void Program::extrapolate(std::unique_ptr<Node>& tree) {
+void Program::extrapolate(std::unique_ptr<Node>& tree, std::unordered_map<std::string, Program>& programs, std::string workingDir) {
 	for (auto& node : tree->children) {
 		if (node->type == NodeType::DECL) {
 			Type expectedType;
@@ -235,20 +251,25 @@ void Program::extrapolate(std::unique_ptr<Node>& tree) {
 			}
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], true, context).parts;
-			extrapolate(node->children[1]);
+			extrapolate(node->children[1], programs, workingDir);
 			context.currentNamespace.clear();
 		} else if (node->type == NodeType::RUN) {
 			extrapolatedSymbols.push_back({new Symbol(typeFromFunction(node->children[0], context), Identifier({{"run", false}, {"0", false}})), _extrapolate(node->children[0]), true});
 		} else if (node->type == NodeType::TYPEDECL) {
 			auto oldNamespace = std::vector<IdPart>(context.currentNamespace);
 			context.currentNamespace.push_back({strings[node->value.valC], true});
-			extrapolate(node->children[0]->children[0]);
+			extrapolate(node->children[0]->children[0], programs, workingDir);
 			context.currentNamespace = oldNamespace;
 		} else if (node->type == NodeType::OPOVERLOAD) {
 			auto overloadname = std::vector<IdPart>(context.currentNamespace);
 			overloadname.emplace_back(strings[node->value.valC], false);
 			Symbol *s = &context.symbols.find(Identifier(overloadname))->second;
 			extrapolatedSymbols.push_back({s, _extrapolate(node->children[0])});
+		} else if (node->type == NodeType::LOAD) {
+			std::string filename = bfs::canonical(parseFilename(node->children[0]->children[0]) + ".lok", bfs::path(workingDir)).c_str();
+			context.externalSymbols[filename] = programs[filename].context.symbols;
+			PLOGD << "A load statement, referencing " << filename
+				  << " (" << context.externalSymbols[filename].size() << " symbols loaded)";
 		}
 		//  else if (node->type == NodeType::CTORDEF) {
 		// 	auto ctorname = std::vector<IdPart>(context.currentNamespace);

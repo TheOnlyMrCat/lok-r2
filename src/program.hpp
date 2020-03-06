@@ -132,6 +132,14 @@ public:
 	std::string op;
 };
 
+class ArgsExpr : public Expr {
+public:
+	ArgsExpr(std::vector<Expr*>);
+	~ArgsExpr() override;
+
+	std::vector<Expr*> expressions;
+};
+
 class IntValue : public Expr {
 public:
 	IntValue(long long, int);
@@ -185,6 +193,7 @@ struct ProgramContext {
 	std::vector<StackFrame> stackFrames;
 	std::map<Identifier, Symbol> symbols;
 	std::vector<Decl> declarations;
+	std::map<std::string, std::map<Identifier, Symbol>> externalSymbols;
 };
 
 struct ExtrapSymbol {
@@ -198,7 +207,7 @@ struct ExtrapSymbol {
 class Program {
 public:
 	void findSymbols(std::unique_ptr<Node>& tree);
-	void extrapolate(std::unique_ptr<Node>& tree);
+	void extrapolate(std::unique_ptr<Node>& tree, std::unordered_map<std::string, Program>& otherPrograms, std::string workingDir);
 
 private:
 	ProgramContext context;
