@@ -200,7 +200,7 @@ struct ExtrapSymbol {
 	void destroy();
 
 	Symbol *s;
-	Expr *value;
+	Statement *value;
 	bool destroySymbol = false;
 };
 

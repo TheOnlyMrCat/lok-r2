@@ -270,13 +270,23 @@ void Program::extrapolate(std::unique_ptr<Node>& tree, std::unordered_map<std::s
 			context.externalSymbols[filename] = programs[filename].context.symbols;
 			PLOGD << "A load statement, referencing " << filename
 				  << " (" << context.externalSymbols[filename].size() << " symbols loaded)";
+		} else if (node->type == NodeType::CTORDEF) {
+			PLOGD << "A constructor definition, containing...";
+			auto ctorname = std::vector<IdPart>(context.currentNamespace);
+			ctorname.emplace_back("new", false);
+			Symbol *s = &context.symbols.find(Identifier(ctorname))->second;
+			//TODO CtorInit node type
+			if (node->children[1]->type == NodeType::BLOCK) {
+				extrapolatedSymbols.push_back({s, _extrapStmt(node->children[1])});
+			} else if (node->children.size() >= 3 && node->children[2]->type == NodeType::BLOCK) {
+				extrapolatedSymbols.push_back({s, _extrapStmt(node->children[2])});
+			}
+		} else if (node->type == NodeType::DTORDEF) {
+			PLOGD << "A destructor definition, containing...";
+			auto dtorname = std::vector<IdPart>(context.currentNamespace);
+			dtorname.emplace_back("del", false);
+			Symbol *s = &context.symbols.find(Identifier(dtorname))->second;
+			extrapolatedSymbols.push_back({s, _extrapStmt(node->children[0])});
 		}
-		//  else if (node->type == NodeType::CTORDEF) {
-		// 	auto ctorname = std::vector<IdPart>(context.currentNamespace);
-		// 	ctorname.emplace_back("new", false);
-		// 	Symbol *s = &context.symbols.find(Identifier(ctorname))->second;
-		// 	extrapolatedSymbols.push_back({s, _extrapolate()})
-		// }
-		//TODO
 	}
 }

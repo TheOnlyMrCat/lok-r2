@@ -5,6 +5,10 @@ i8 :: struct >=> {
         // This constructor doesn't do anything
     };
 
+    @(explicit) new(v: i32) => value = 0 /* No array literals yet */ >=> {
+        // This constructor doesn't do anything either
+    };
+
     operator+ (left: i8, right: i8) -> i8 >=> {
         newVal: bit[8];
         c: bit;
