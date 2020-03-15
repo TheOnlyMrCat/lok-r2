@@ -41,14 +41,16 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	}
 }
 
-bool checkForOverload(SingleType l, SingleType r, std::string op, ProgramContext &pc) {
+Type checkForOverload(SingleType l, SingleType r, std::string op, ProgramContext &pc) {
 	std::vector<IdPart> symbolLoc = l.id.parts;
 	symbolLoc.emplace_back(op, false);
-	return pc.symbols.find(symbolLoc) != pc.symbols.end();
+	auto s = pc.symbols.find(symbolLoc);
+	return s == pc.symbols.end() ? Type() : s->second.type;
 }
 
-bool checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
+Type checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 	bool valid = l.types.size() != r.types.size();
+	std::vector<Type> types;
 	for (int i = 0; valid && i < l.types.size(); i++) {
 		Type lType = l.types[i], rType = r.types[i];
 		if (lType.typeType == 2 || rType.typeType == 2) {
@@ -57,17 +59,41 @@ bool checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 			if (rType.typeType != 1) {
 				valid = false;
 			} else {
-				valid = checkTuple(*lType.tuple, *rType.tuple, op, pc);
+				Type t = checkTuple(*lType.tuple, *rType.tuple, op, pc);
+				valid = t.typeType != -1;
+				types.push_back(t);
 			}
 		} else {
 			if (rType.typeType != 0) {
 				valid = false;
 			} else {
-				valid = checkForOverload(*lType.basic, *rType.basic, op, pc);
+				Type t = checkForOverload(*lType.basic, *rType.basic, op, pc);
+				valid = t.typeType != -1;
+				types.push_back(t);
 			}
 		}
 	}
-	return valid;
+	return valid ? Type(types) : Type();
+}
+
+bool functionMatches(ReturningType r, ArgsExpr args) {
+	return true;
+}
+
+Type functionReturns(Type t) {
+	if (t.typeType == 1) {
+		std::vector<Type> types;
+		for (auto tx : t.tuple->types) {
+			Type r = functionReturns(tx);
+			if (r.typeType == -1) return Type();
+			types.push_back(r);
+		}
+		return Type(types);
+	} else if (t.typeType == 2) {
+		return t.func->output;
+	} else {
+		return Type();
+	}
 }
 
 Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
@@ -159,7 +185,6 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 			for (auto& param : node->children[1]->children) {
 				frame.symbols.emplace_back(Type(param->children[0], context), Identifier({{strings[param->value.valC], false}}));
 			}
-			
 			context.stackFrames.emplace_back(frame);
 			Statement *s = _extrapStmt(node->children[0]);
 			context.stackFrames.pop_back();
@@ -173,21 +198,27 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 				Expr *right = _extrapolate(node->children[1]);
 				Type lType = left->type;
 				Type rType = right->type;
-				bool valid = true;
+				Type exprType;
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with operator " << op;
-				if (lType.typeType == 1) {
+				if (lType.typeType == 2 && op == "()") {
+					 
+				} else if (lType.typeType == 1) {
 					if (rType.typeType != 1) {
 						PLOGE << "Bad"; //TODO link error with yy::parser::error
 						throw; //TODO Throw something
 					}
-					valid = checkTuple(*lType.tuple, *rType.tuple, op, context);
+					exprType = functionReturns(checkTuple(*lType.tuple, *rType.tuple, op, context));
 				} else if (lType.typeType == 0) {
 					if (rType.typeType != 0) {
 						PLOGE << "Disappointing"; //TODO see above
 						throw;
 					}
-					valid = checkForOverload(*lType.basic, *rType.basic, op, context); //TODO get type returned
+					exprType = functionReturns(checkForOverload(*lType.basic, *rType.basic, op, context));
+				}
+				if (exprType.typeType == -1) {
+					PLOGE << "No bad I don't know how to do it please help";
+					throw;
 				}
 				return new OpExpr(lType, left, right, strings[node->value.valC]);
 			} else {

@@ -80,7 +80,7 @@ struct Node {
 %type <strings_t> CompAssignOperator
 %type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath FullyQualifiedPath QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
 %type <NodePtr> BasicDeclaration TypeDeclaration FuncDefinition FunctionBody ParameterList Parameters Parameter Arguments ArgumentList
-%type <NodePtr> Attributes AttributeList
+%type <NodePtr> Attributes AttributeList Attribute
 %type <NodePtr> ClassDefinition CtorDefinition CtorInit CtorAssign DtorDefinition OpOverload
 %type <NodePtr> Type SingleType TupleTypes TupleType FunctionType TypeQualifiers
 %type <NodePtr> BlockStatement Statements Statement
@@ -310,8 +310,13 @@ Attributes:
   ;
 
 AttributeList:
-    ID               { $$ = std::make_unique<Node>(1, NodeType::ATTRS, @$); NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @$); n->value.valC = $1; addChild($$, n); }
-  | AttributeList ID { $$ = std::move($1); NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @$); n->value.valC = $2; addChild($$, n); }
+    Attribute               { $$ = std::make_unique<Node>(1, NodeType::ATTRS, @$); addChild($$, $1); }
+  | AttributeList Attribute { $$ = std::move($1); addChild($$, $2); }
+  ;
+
+Attribute:
+    ID            { $$ = std::make_unique<Node>(0, NodeType::ATTR, @$); $$->value.valC = $1; }
+  | ID '[' ID ']' { $$ = std::make_unique<Node>(1, NodeType::ATTR, @$); NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @3); n->value.valC = $3; addChild($$, n); }
   ;
 
 Type:

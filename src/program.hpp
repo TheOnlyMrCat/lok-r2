@@ -41,10 +41,15 @@ struct Identifier {
     std::vector<IdPart> parts;
 };
 
+struct Attributes {
+	std::map<std::string, std::string> attrs;
+};
+
 class Symbol {
 public:
 	Symbol(NodePtr& node, bool isType, ProgramContext& pc);
 	Symbol(Type, Identifier);
+	Symbol(Type, Identifier, Attributes);
 
 	std::string toLokConv();
 	std::string toCxxConv();
@@ -52,6 +57,7 @@ public:
 
 	Type type;
 	Identifier id;
+	Attributes attr;
 };
 
 class Decl {

@@ -1,3 +1,4 @@
+@(opt[byte])
 i8 :: struct >=> {
     new(v: bit[8]) => value = v;
 
