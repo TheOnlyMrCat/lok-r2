@@ -79,16 +79,41 @@ bool Type::operator==(const Type& other) const {
 	}
 }
 
+bool Type::operator<(const Type& other) const {
+	switch (typeType) {
+		case -1:
+			return false;
+		case 0:
+			return typeType < other.typeType || (other.typeType == typeType && *basic < *other.basic);
+		case 1:
+			return typeType < other.typeType || (other.typeType == typeType && *tuple < *other.tuple);
+		case 2:
+			return typeType < other.typeType || (other.typeType == typeType && *func < *other.func);
+	}
+}
+
 bool SingleType::operator==(const SingleType& other) const {
 	return id == other.id && ((qualifier.get() != nullptr && other.qualifier.get() != nullptr) ? qualifier->operator==(*other.qualifier) : qualifier == other.qualifier);
+}
+
+bool SingleType::operator<(const SingleType& other) const {
+	return id < other.id;
 }
 
 bool TupleType::operator==(const TupleType& other) const {
 	return types == other.types;
 }
 
+bool TupleType::operator<(const TupleType& other) const {
+	return types < other.types;
+}
+
 bool ReturningType::operator==(const ReturningType& other) const {
 	return input == other.input && output == other.output;
+}
+
+bool ReturningType::operator<(const ReturningType& other) const {
+	return input < other.input && output < other.output;
 }
 
 bool TypeQualifier::operator==(const TypeQualifier& other) const {
@@ -158,6 +183,7 @@ Symbol::Symbol(Type t, Identifier i): type(t), id(i) {}
 
 //! Requires call of getSymbol twice. Is this fixable?
 SymbolExpr::SymbolExpr(Identifier i, ProgramContext &pc): Expr(getSymbol(i, pc).type), symbol(getSymbol(i, pc)) {}
+SymbolExpr::SymbolExpr(Symbol s): Expr(s.type), symbol(s) {}
 
 void ExtrapSymbol::destroy() {
 	if (destroySymbol && s) {

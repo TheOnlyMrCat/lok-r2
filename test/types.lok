@@ -21,3 +21,82 @@ i8 :: struct >=> {
 
     value: bit[8];
 };
+
+@(opt[short])
+i16 :: struct >=> {
+    new(v: bit[16]) => value = v;
+
+    @(explicit) new(v: bit[]) >=> {
+        // This constructor doesn't do anything
+    };
+
+    @(explicit) new(v: i32) => value = 0 /* No array literals yet */ >=> {
+        // This constructor doesn't do anything either
+    };
+
+    operator+ (left: i16, right: i16) -> i16 >=> {
+        newVal: bit[16];
+        c: bit;
+        for (i := 15; i >= 0; i--) {
+            c = left[i] & right[i] & c;
+            newVal[i] = left[i] ^ right[i] ^ c;
+        }
+    };
+
+    value: bit[16];
+};
+
+@(opt[int])
+i32 :: struct >=> {
+    new(v: bit[32]) => value = v;
+
+    @(explicit) new(v: bit[]) >=> {
+        // This constructor doesn't do anything
+    };
+
+    @(explicit) new(v: i32) => value = 0 /* No array literals yet */ >=> {
+        // This constructor doesn't do anything either
+    };
+
+    operator+ (left: i32, right: i32) -> i32 >=> {
+        newVal: bit[32];
+        c: bit;
+        for (i := 31; i >= 0; i--) {
+            c = left[i] & right[i] & c;
+            newVal[i] = left[i] ^ right[i] ^ c;
+        }
+    };
+
+    value: bit[32];
+};
+
+@(opt[long])
+i64 :: struct >=> {
+    new(v: bit[64]) => value = v;
+
+    @(explicit) new(v: bit[]) >=> {
+        // This constructor doesn't do anything
+    };
+
+    @(explicit) new(v: i32) => value = 0 /* No array literals yet */ >=> {
+        // This constructor doesn't do anything either
+    };
+
+    operator+ (left: i64, right: i64) -> i64 >=> {
+        newVal: bit[64];
+        c: bit;
+        for (i := 63; i >= 0; i--) {
+            c = left[i] & right[i] & c;
+            newVal[i] = left[i] ^ right[i] ^ c;
+        }
+    };
+
+    value: bit[64];
+};
+
+namespace(std)
+
+i64MAX: i64 = 9223372036854775807;
+i32MAX: i32 = 2147483647;
+i16MAX: i16 = 32767;
+i8MAX : i8  = 127;

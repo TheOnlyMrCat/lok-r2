@@ -76,7 +76,45 @@ Type checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 	return valid ? Type(types) : Type();
 }
 
+Expr *coerceType(Expr *expr, Type finalType, ProgramContext &pc) {
+	Type type = expr->type;
+	// Forced upgrades
+	auto forced = pc.forcedConstructors.find(type);
+	if (forced != pc.forcedConstructors.end()) {
+		auto iter = pc.forcedConstructors.equal_range(forced->first);
+		std::vector<Symbol> possibleConstructors;
+		for (auto i = iter.first; i != iter.second; i++) {
+			possibleConstructors.push_back(i->second);
+		}
+		if (possibleConstructors.size() > 1) {
+			auto found = std::find_if(possibleConstructors.begin(), possibleConstructors.end(), [finalType](const Symbol& s) { return s.type.func->output == finalType; });
+			if (found != possibleConstructors.end()) {
+				return new OpExpr(
+					found->type.func->output,
+					new SymbolExpr(*found),
+					new ArgsExpr({expr}),
+					"()"
+				);
+			}
+		} else {
+			return new OpExpr(
+				possibleConstructors[0].type.func->output,
+				new SymbolExpr(possibleConstructors[0]),
+				new ArgsExpr({expr}),
+				"()"
+			);
+		}
+		
+	}
+	if (type == finalType) return expr;
+	return nullptr;
+}
+
 bool functionMatches(ReturningType r, ArgsExpr args) {
+	if (r.input.types.size() != args.type.tuple->types.size()) return false;
+	for (int i = 0; i < r.input.types.size(); i++) {
+		if (!(r.input.types[i] == args.type.tuple->types[i])) return false;
+	}
 	return true;
 }
 
@@ -202,7 +240,11 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with operator " << op;
 				if (lType.typeType == 2 && op == "()") {
-					 
+					if (!functionMatches(*lType.func, *static_cast<ArgsExpr*>(right))) {
+						PLOGE << "No";
+						throw;
+					}
+					exprType = functionReturns(lType);
 				} else if (lType.typeType == 1) {
 					if (rType.typeType != 1) {
 						PLOGE << "Bad"; //TODO link error with yy::parser::error
@@ -217,7 +259,7 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 					exprType = functionReturns(checkForOverload(*lType.basic, *rType.basic, op, context));
 				}
 				if (exprType.typeType == -1) {
-					PLOGE << "No bad I don't know how to do it please help";
+					PLOGE << "I'm sad";
 					throw;
 				}
 				return new OpExpr(lType, left, right, strings[node->value.valC]);

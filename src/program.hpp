@@ -24,6 +24,7 @@ struct Type {
 
 	Type& operator=(const Type&);
 	bool operator==(const Type&) const;
+	bool operator< (const Type&) const;
 
     int typeType;
     val::value_ptr<SingleType> basic;
@@ -185,6 +186,7 @@ public:
 class SymbolExpr : public Expr {
 public:
 	SymbolExpr(Identifier, ProgramContext&);
+	SymbolExpr(Symbol);
 
 	Symbol symbol;
 };
@@ -199,6 +201,7 @@ struct ProgramContext {
 	std::vector<StackFrame> stackFrames;
 	std::map<Identifier, Symbol> symbols;
 	std::vector<Decl> declarations;
+	std::multimap<Type, Symbol> forcedConstructors;
 	std::map<std::string, std::map<Identifier, Symbol>> externalSymbols;
 };
 

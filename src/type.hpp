@@ -30,6 +30,7 @@ public:
     SingleType(Identifier);
 
     bool operator==(const SingleType&) const;
+    bool operator< (const SingleType&) const;
 
     Identifier id;
     val::value_ptr<TypeQualifier> qualifier;
@@ -41,6 +42,7 @@ public:
     TupleType(std::vector<Type>);
 
     bool operator==(const TupleType&) const;
+    bool operator< (const TupleType&) const;
 
     std::vector<Type> types;
 };
@@ -51,6 +53,7 @@ public:
     ReturningType(TupleType, Type);
 
     bool operator==(const ReturningType&) const;
+    bool operator< (const ReturningType&) const;
 
     TupleType input;
     Type output;
