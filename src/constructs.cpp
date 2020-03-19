@@ -66,7 +66,7 @@ Type& Type::operator=(const Type& other) {
 }
 
 bool Type::operator==(const Type& other) const {
-	if (typeType != other.typeType && typeType != -1 && other.typeType != -1) return false;
+	if (typeType != other.typeType && (typeType == -1 || other.typeType == -1)) return false;
 	switch (typeType) {
 		case 0:
 			return basic->operator==(*other.basic);
@@ -89,6 +89,8 @@ bool Type::operator<(const Type& other) const {
 			return typeType < other.typeType || (other.typeType == typeType && *tuple < *other.tuple);
 		case 2:
 			return typeType < other.typeType || (other.typeType == typeType && *func < *other.func);
+		default:
+			throw; //? Throw something?
 	}
 }
 

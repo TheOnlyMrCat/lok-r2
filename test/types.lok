@@ -1,6 +1,6 @@
 @(opt[byte])
 i8 :: struct >=> {
-    new(v: bit[8]) => value = v;
+    @(forced) new(v: bit[8]) => value = v;
 
     @(explicit) new(v: bit[]) >=> {
         // This constructor doesn't do anything
@@ -19,12 +19,16 @@ i8 :: struct >=> {
         }
     };
 
+    operator>= (left: i8, right: i8) -> i8 >=> {
+        //Umm... idk. This is just to silence the warnings
+    };
+
     value: bit[8];
 };
 
 @(opt[short])
 i16 :: struct >=> {
-    new(v: bit[16]) => value = v;
+    @(forced) new(v: bit[16]) => value = v;
 
     @(explicit) new(v: bit[]) >=> {
         // This constructor doesn't do anything
@@ -43,12 +47,16 @@ i16 :: struct >=> {
         }
     };
 
+    operator>= (left: i16, right: i16) -> i8 >=> {
+        //Umm... idk. This is just to silence the warnings
+    };
+
     value: bit[16];
 };
 
 @(opt[int])
 i32 :: struct >=> {
-    new(v: bit[32]) => value = v;
+    @(forced) new(v: bit[32]) => value = v;
 
     @(explicit) new(v: bit[]) >=> {
         // This constructor doesn't do anything
@@ -67,12 +75,16 @@ i32 :: struct >=> {
         }
     };
 
+    operator>= (left: i32, right: i32) -> i8 >=> {
+        //Umm... idk. This is just to silence the warnings
+    };
+
     value: bit[32];
 };
 
 @(opt[long])
 i64 :: struct >=> {
-    new(v: bit[64]) => value = v;
+    @(forced) new(v: bit[64]) => value = v;
 
     @(explicit) new(v: bit[]) >=> {
         // This constructor doesn't do anything
@@ -89,6 +101,10 @@ i64 :: struct >=> {
             c = left[i] & right[i] & c;
             newVal[i] = left[i] ^ right[i] ^ c;
         }
+    };
+
+    operator>= (left: i64, right: i64) -> i8 >=> {
+        //Umm... idk. This is just to silence the warnings
     };
 
     value: bit[64];

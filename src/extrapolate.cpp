@@ -23,6 +23,7 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			ctorname.emplace_back("new", false);
 			Symbol s = Symbol(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
+			if (s.attr.attrs.count("forced") > 0) context.forcedConstructors.emplace(s.type.func->output, s);
 		} else if (node->type == NodeType::DTORDEF) {
 			auto dtorname = std::vector<IdPart>(context.currentNamespace);
 			dtorname.emplace_back("del", false);
@@ -78,6 +79,7 @@ Type checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 
 Expr *coerceType(Expr *expr, Type finalType, ProgramContext &pc) {
 	Type type = expr->type;
+	if (type == finalType) return expr;
 	// Forced upgrades
 	auto forced = pc.forcedConstructors.find(type);
 	if (forced != pc.forcedConstructors.end()) {
@@ -104,9 +106,7 @@ Expr *coerceType(Expr *expr, Type finalType, ProgramContext &pc) {
 				"()"
 			);
 		}
-		
 	}
-	if (type == finalType) return expr;
 	return nullptr;
 }
 
@@ -150,7 +150,7 @@ Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
 			if (node->children.size() > expressionIndex && node->children[expressionIndex]->type != NodeType::ATTRS) {
 				expr = _extrapolate(node->children[expressionIndex]);
 				if (type.typeType != -1 && !(expr->type == type)) {
-					PLOGE << "No bad type doesn't match";
+					PLOGE << "No bad type doesn't match"; //* Error location
 					throw;
 				} else {
 					type = expr->type;
@@ -232,37 +232,40 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 		case NodeType::EXPRBASIC: {
 			PLOGD << "A basic expression, containing...";
 			Expr *left = _extrapolate(node->children[0]);
+			Expr *fLeft = coerceType(left, Type(), context);
+			if (!fLeft) fLeft = left;
 			if (node->children.size() > 1) {
 				Expr *right = _extrapolate(node->children[1]);
-				Type lType = left->type;
+				Type lType = fLeft->type;
 				Type rType = right->type;
 				Type exprType;
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with operator " << op;
 				if (lType.typeType == 2 && op == "()") {
 					if (!functionMatches(*lType.func, *static_cast<ArgsExpr*>(right))) {
-						PLOGE << "No";
+						PLOGE << "Incorrect arguments for function"; //* Error location
 						throw;
 					}
 					exprType = functionReturns(lType);
 				} else if (lType.typeType == 1) {
-					if (rType.typeType != 1) {
-						PLOGE << "Bad"; //TODO link error with yy::parser::error
-						throw; //TODO Throw something
+					if (rType.typeType != 1) { //? Other overloads for that stuff
+						PLOGE << "Cannot add non-tuple to tuple yet"; //* Error location
+						throw;
 					}
+					//TODO these should return expressions
 					exprType = functionReturns(checkTuple(*lType.tuple, *rType.tuple, op, context));
 				} else if (lType.typeType == 0) {
 					if (rType.typeType != 0) {
-						PLOGE << "Disappointing"; //TODO see above
+						PLOGE << "Cannot add non-single to single yet"; //* Error location
 						throw;
 					}
 					exprType = functionReturns(checkForOverload(*lType.basic, *rType.basic, op, context));
 				}
 				if (exprType.typeType == -1) {
-					PLOGE << "I'm sad";
+					PLOGE << "Could not find a type for an expression"; //* Error location
 					throw;
 				}
-				return new OpExpr(lType, left, right, strings[node->value.valC]);
+				return new OpExpr(lType, fLeft, right, strings[node->value.valC]);
 			} else {
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with " << (node->value.valB ? "postfix" : "prefix") << " operator " << op;
