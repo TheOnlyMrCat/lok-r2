@@ -99,20 +99,10 @@ Expr *coerceType(Expr *expr, Type finalType, ProgramContext &pc) {
 		if (possibleConstructors.size() > 1) {
 			auto found = std::find_if(possibleConstructors.begin(), possibleConstructors.end(), [finalType](const Symbol& s) { return s.type.func->output == finalType; });
 			if (found != possibleConstructors.end()) {
-				return new OpExpr(
-					found->type.func->output,
-					new SymbolExpr(*found),
-					new ArgsExpr({expr}),
-					"()"
-				);
+				return new CallExpr(new SymbolExpr(*found), ArgsExpr({expr}));
 			}
 		} else {
-			return new OpExpr(
-				possibleConstructors[0].type.func->output,
-				new SymbolExpr(possibleConstructors[0]),
-				new ArgsExpr({expr}),
-				"()"
-			);
+			return new CallExpr(new SymbolExpr(possibleConstructors[0]), ArgsExpr({expr}));
 		}
 	}
 	return nullptr;
@@ -248,7 +238,6 @@ Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
 	}
 }
 
-// node is expected to be something that can parse into an expression
 Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 	switch (node->type) {
 		case NodeType::FUNCDEF: {
@@ -291,24 +280,14 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 					}
 					return new CallExpr(fLeft, ArgsExpr(exprs));
 				} else if (lType.typeType == 1) {
-					if (rType.typeType != 1) { //? Other overloads for that stuff
-						PLOGE << "Cannot add non-tuple to tuple yet"; //* Error location
-						throw;
-					}
-					//TODO these should return expressions
-					exprType = functionReturns(checkTuple(*lType.tuple, *rType.tuple, op, context));
+					Expr *fRight = coerceType(right, Type(), context);
+					if (!fRight) fRight = right;
+					return getOverload(fLeft, fRight, op, context);
 				} else if (lType.typeType == 0) {
-					if (rType.typeType != 0) {
-						PLOGE << "Cannot add non-single to single yet"; //* Error location
-						throw;
-					}
-					exprType = functionReturns(checkForOverload(*lType.basic, *rType.basic, op, context));
-				}
-				if (exprType.typeType == -1) {
-					PLOGE << "Could not find a type for an expression"; //* Error location
-					throw;
-				}
-				return new OpExpr(exprType, fLeft, right, strings[node->value.valC]);
+					Expr *fRight = coerceType(right, Type(), context);
+					if (!fRight) fRight = right;
+					return getOverload(fLeft, fRight, op, context);
+				} else PLOGF << "AAAAAAAAAA"; throw; // I don't know what would have happened here but it's not pretty
 			} else {
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with " << (node->value.valB ? "postfix" : "prefix") << " operator " << op;

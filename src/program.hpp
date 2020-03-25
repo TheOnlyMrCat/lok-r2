@@ -129,17 +129,6 @@ public:
 	bool isDo;
 };
 
-//? Probably abolish this in favour of a function call expression
-class OpExpr : public Expr {
-public:
-	OpExpr(Type, Expr*, Expr*, std::string);
-	~OpExpr() override;
-
-	Expr *left;
-	Expr *right;
-	std::string op;
-};
-
 class ArgsExpr : public Expr {
 public:
 	ArgsExpr(std::vector<Expr*>);

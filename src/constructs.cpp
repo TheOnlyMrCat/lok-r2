@@ -199,15 +199,6 @@ void ExtrapSymbol::destroy() {
 Expr::Expr(Type t): type(t) {}
 Expr::~Expr() = default;
 
-OpExpr::OpExpr(Type t, Expr *l, Expr *r, std::string o): Expr(t), left(std::move(l)), right(std::move(r)), op(o) {}
-OpExpr::~OpExpr() {
-	if (left) delete left;
-	if (right) delete right;
-
-	left = nullptr;
-	right = nullptr;
-}
-
 IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
 FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
 BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
