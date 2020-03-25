@@ -213,6 +213,7 @@ FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit"
 BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
 StringValue::StringValue(std::string val): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, val.length(), TypeQualifier(false, true, 0, TypeQualifier(false, false, 8))))), value(val) {}
 FuncValue::FuncValue(ReturningType t, Statement *v): Expr(t), statement(v) {}
+CallExpr::CallExpr(Expr* x, ArgsExpr a): Expr(x->type.func->output), expr(x), args(a) {}
 ArgsExpr::ArgsExpr(std::vector<Expr*> x) : Expr(TupleType([&x](){
 	std::vector<Type> t;
 	t.reserve(x.size());
@@ -230,6 +231,11 @@ ArgsExpr::~ArgsExpr() {
 		if (x) delete x;
 		x = nullptr;
 	}
+}
+
+CallExpr::~CallExpr() {
+	if (expr) delete expr;
+	expr = nullptr;
 }
 
 ReturnStmt::ReturnStmt(Expr* x) : expr(x) {}

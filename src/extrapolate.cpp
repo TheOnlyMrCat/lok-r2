@@ -23,7 +23,14 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			ctorname.emplace_back("new", false);
 			Symbol s = Symbol(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
-			if (s.attr.attrs.count("forced") > 0) context.forcedConstructors.emplace(s.type.func->output, s);
+			if (s.attr.attrs.count("forced") > 0) {
+				std::vector<Type> params = s.type.func->input.types;
+				if (params.size() > 1) {
+					PLOGE << "Forced constructor with more than one parameter"; //* Error location
+					throw; //? Convert to tuple?
+				}
+				context.forcedConstructors.emplace(params[1], s);
+			}
 		} else if (node->type == NodeType::DTORDEF) {
 			auto dtorname = std::vector<IdPart>(context.currentNamespace);
 			dtorname.emplace_back("del", false);
@@ -34,6 +41,7 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			overloadname.emplace_back(strings[node->value.valC], false);
 			Symbol s = Symbol(typeFromFunction(node->children[0], context), overloadname);
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
+			context.opOverloads.emplace(strings[node->value.valC], s);
 		} else if (node->type == NodeType::NAMESPACE) {
 			context.currentNamespace = Identifier(node->children[0], true, context).parts;
 			findSymbols(node->children[1]);
@@ -116,6 +124,34 @@ bool functionMatches(ReturningType r, ArgsExpr args) {
 		if (!(r.input.types[i] == args.type.tuple->types[i])) return false;
 	}
 	return true;
+}
+
+Expr *getOverload(Expr *lt, Expr *rt, std::string op, ProgramContext &pc) {
+	auto its = pc.opOverloads.equal_range(op);
+	if (its.first == pc.opOverloads.end()) {
+		PLOGE << "Somehow that operator hasn't been overloaded at all"; //* Error location
+		throw;
+	}
+	std::vector<Expr*> possible;
+	for (auto i = its.first; i != its.second; i++) {
+		if (i->first != op) continue;
+		Type t1 = i->second.type.func->input.types[0];
+		Type t2 = i->second.type.func->input.types[1];
+		if (t1 == lt->type && t2 == rt->type) return new CallExpr(new SymbolExpr(i->second), ArgsExpr({lt, rt}));
+		Expr *clt = coerceType(lt, t1, pc);
+		Expr *crt = coerceType(rt, t2, pc);
+		if (clt && crt) possible.push_back(new CallExpr(new SymbolExpr(i->second), ArgsExpr({lt, rt})));
+	}
+	if (possible.size() > 1) {
+		PLOGE << "Cannot determine type to match overload"; //* Error location
+		throw;
+	} else if (possible.size() == 0) {
+		PLOGE << "No overloads match the input arguments"; //* Error location
+		throw;
+	} else {
+		PLOGW << "Implicit type conversion in operator expression"; //* Warning location
+		return possible[0];
+	}
 }
 
 Type functionReturns(Type t) {
@@ -242,11 +278,18 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with operator " << op;
 				if (lType.typeType == 2 && op == "()") {
-					if (!functionMatches(*lType.func, *static_cast<ArgsExpr*>(right))) {
-						PLOGE << "Incorrect arguments for function"; //* Error location
-						throw;
+					std::vector<Type> params = lType.func->input.types;
+					ArgsExpr *args = static_cast<ArgsExpr*>(right);
+					std::vector<Expr*> exprs;
+					for (int i = 0; i < params.size(); i++) {
+						Expr *arg = coerceType(args->expressions[i], params[i], context);
+						if (!arg) {
+							PLOGE << "Could not convert argument to required type"; //* Error location
+							throw;
+						}
+						exprs.push_back(arg);
 					}
-					exprType = functionReturns(lType);
+					return new CallExpr(fLeft, ArgsExpr(exprs));
 				} else if (lType.typeType == 1) {
 					if (rType.typeType != 1) { //? Other overloads for that stuff
 						PLOGE << "Cannot add non-tuple to tuple yet"; //* Error location
@@ -265,7 +308,7 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 					PLOGE << "Could not find a type for an expression"; //* Error location
 					throw;
 				}
-				return new OpExpr(lType, fLeft, right, strings[node->value.valC]);
+				return new OpExpr(exprType, fLeft, right, strings[node->value.valC]);
 			} else {
 				std::string op = strings[node->value.valC];
 				PLOGD << "... (expr) with " << (node->value.valB ? "postfix" : "prefix") << " operator " << op;

@@ -33,11 +33,6 @@ Symbol getSymbol(Identifier id, ProgramContext& pc) {
         PLOGD << "Found variable on stack";
         return *local;
     }
-    auto alias = pc.aliases.find(id);
-    if (alias != pc.aliases.end()) {
-        PLOGD << "Found alias";
-        return alias->second;
-    }
     auto symbol = pc.symbols.find(id);
     if (symbol != pc.symbols.end()) {
         PLOGD << "Found symbol";

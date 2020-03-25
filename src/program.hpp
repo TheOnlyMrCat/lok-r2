@@ -129,6 +129,7 @@ public:
 	bool isDo;
 };
 
+//? Probably abolish this in favour of a function call expression
 class OpExpr : public Expr {
 public:
 	OpExpr(Type, Expr*, Expr*, std::string);
@@ -145,6 +146,15 @@ public:
 	~ArgsExpr() override;
 
 	std::vector<Expr*> expressions;
+};
+
+class CallExpr : public Expr {
+public:
+	CallExpr(Expr*, ArgsExpr);
+	~CallExpr();
+
+	Expr *expr;
+	ArgsExpr args;
 };
 
 class IntValue : public Expr {
@@ -196,13 +206,15 @@ struct StackFrame {
 };
 
 struct ProgramContext {
-	std::map<Identifier, Symbol> aliases;
 	std::vector<IdPart> currentNamespace;
-	std::vector<StackFrame> stackFrames;
 	std::map<Identifier, Symbol> symbols;
-	std::vector<Decl> declarations;
-	std::multimap<Type, Symbol> forcedConstructors;
 	std::map<std::string, std::map<Identifier, Symbol>> externalSymbols;
+
+	std::multimap<Type, Symbol> forcedConstructors;
+	std::multimap<std::string, Symbol> opOverloads;
+
+	std::vector<Decl> declarations;
+	std::vector<StackFrame> stackFrames;
 };
 
 struct ExtrapSymbol {
