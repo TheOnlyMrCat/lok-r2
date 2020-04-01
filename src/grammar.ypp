@@ -316,7 +316,7 @@ AttributeList:
 
 Attribute:
     ID            { $$ = std::make_unique<Node>(0, NodeType::ATTR, @$); $$->value.valC = $1; }
-  | ID '[' ID ']' { $$ = std::make_unique<Node>(1, NodeType::ATTR, @$); NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @3); n->value.valC = $3; addChild($$, n); }
+  | ID '[' ID ']' { $$ = std::make_unique<Node>(1, NodeType::ATTR, @$); $$->value.valC = $1; NodePtr n = std::make_unique<Node>(0, NodeType::ATTR, @3); n->value.valC = $3; addChild($$, n); }
   ;
 
 Type:

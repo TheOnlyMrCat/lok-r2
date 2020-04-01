@@ -16,6 +16,7 @@ struct TypeQualifier {
     TypeQualifier(bool, bool, int, TypeQualifier);
 
     bool operator==(const TypeQualifier& other) const;
+    bool operator< (const TypeQualifier& other) const;
 
 	val::value_ptr<TypeQualifier> nested;
 	bool isPointer;

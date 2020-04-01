@@ -99,7 +99,7 @@ bool SingleType::operator==(const SingleType& other) const {
 }
 
 bool SingleType::operator<(const SingleType& other) const {
-	return id < other.id;
+	return id < other.id || ((qualifier.get() != nullptr && other.qualifier.get() != nullptr) ? qualifier->operator<(*other.qualifier) : qualifier < other.qualifier);
 }
 
 bool TupleType::operator==(const TupleType& other) const {
@@ -119,17 +119,32 @@ bool ReturningType::operator<(const ReturningType& other) const {
 }
 
 bool TypeQualifier::operator==(const TypeQualifier& other) const {
-	return isPointer == other.isPointer && forceUpgrade == other.forceUpgrade && arraySize == other.arraySize
-		&& (nested.get() != nullptr && other.nested.get() != nullptr) ? nested->operator==(*other.nested) : nested == other.nested;
+	bool nest;
+	if (nested.get() != nullptr && other.nested.get() != nullptr) {
+		nest = *nested == *other.nested;
+	} else {
+		nest = nested == other.nested;
+	}
+	return isPointer == other.isPointer && forceUpgrade == other.forceUpgrade && arraySize == other.arraySize && nest;
+}
+
+bool TypeQualifier::operator<(const TypeQualifier& other) const {
+	bool nest;
+	if (nested.get() != nullptr && other.nested.get() != nullptr) {
+		nest = *nested < *other.nested;
+	} else {
+		nest = nested < other.nested;
+	}
+	return isPointer < other.isPointer || forceUpgrade < other.forceUpgrade || arraySize < other.arraySize || nest;
 }
 
 // Node is expected to be a FullyQualifiedPath
-Identifier::Identifier(NodePtr& node, bool ignore, ProgramContext& context) : parts(ignore ? std::vector<IdPart>() : context.currentNamespace) {
+Identifier::Identifier(NodePtr& node, bool ignore, ProgramContext& context) : parts(ignore || strings[node->children[0]->value.valC] == "bit" ? std::vector<IdPart>() : context.currentNamespace) {
 	Node *part;
     for (part = node->children[0].get(); part->children.size() > 0; part = part->children[0].get()) {
-        parts.push_back({strings[part->value.valC], false}); //TODO: Resolve types
+        parts.push_back(strings[part->value.valC]); //TODO: Resolve types
     }
-	parts.push_back({strings[part->value.valC], false});
+	parts.push_back(strings[part->value.valC]);
 }
 
 Identifier::Identifier(std::vector<IdPart> parts): parts(parts) {}
@@ -178,7 +193,19 @@ ReturningType::ReturningType(TupleType i, Type o): input(i), output(o) {}
 Symbol::Symbol(NodePtr& node, bool isType, ProgramContext& pc): id(combineParts(pc.currentNamespace, {strings[node->value.valC], isType})) {
 	if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
 		type = Type(node->children[0], pc);
+	} //? Extrapolate type as constant expression, maybe wiping pc
+	if (node->children[node->children.size() - 1]->type == NodeType::ATTRS) {
+		fillAttributes(node->children[node->children.size() - 1]);
 	}
+}
+
+void Symbol::fillAttributes(NodePtr& node) {
+	std::unordered_map<std::string, std::string> map;
+	for (auto& i : node->children) {
+		if (i->children.size() > 0) map[strings[i->value.valC]] = i->children[0]->value.valC;
+		else map[strings[i->value.valC]] = strings[i->value.valC];
+	}
+	attr.attrs = map;
 }
 
 Symbol::Symbol(Type t, Identifier i): type(t), id(i) {}
@@ -199,10 +226,10 @@ void ExtrapSymbol::destroy() {
 Expr::Expr(Type t): type(t) {}
 Expr::~Expr() = default;
 
-IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
-FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, size))), value(val) {}
-BitValue::BitValue(bool val): Expr(SingleType(Identifier({{"bit", true}}))), value(val) {}
-StringValue::StringValue(std::string val): Expr(SingleType(Identifier({{"bit", true}}), TypeQualifier(false, false, val.length(), TypeQualifier(false, true, 0, TypeQualifier(false, false, 8))))), value(val) {}
+IntValue::IntValue(long long val, int size): Expr(SingleType(Identifier({"bit"}), TypeQualifier(false, false, size))), value(val) {}
+FloatValue::FloatValue(double val, int size): Expr(SingleType(Identifier({"bit"}), TypeQualifier(false, false, size))), value(val) {}
+BitValue::BitValue(bool val): Expr(SingleType(Identifier({"bit"}))), value(val) {}
+StringValue::StringValue(std::string val): Expr(SingleType(Identifier({"bit"}), TypeQualifier(false, false, val.length(), TypeQualifier(false, true, 0, TypeQualifier(false, false, 8))))), value(val) {}
 FuncValue::FuncValue(ReturningType t, Statement *v): Expr(t), statement(v) {}
 CallExpr::CallExpr(Expr* x, ArgsExpr a): Expr(x->type.func->output), expr(x), args(a) {}
 ArgsExpr::ArgsExpr(std::vector<Expr*> x) : Expr(TupleType([&x](){
@@ -241,7 +268,7 @@ std::string Symbol::toLokConv() {
 	std::string sb;
 	for (auto i : id.parts) {
 		sb += '_';
-		sb += i.first;
+		sb += i;
 	}
 	return sb;
 }

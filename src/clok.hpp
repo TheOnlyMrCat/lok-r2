@@ -10,7 +10,7 @@
 
 #include "types.hpp"
 
-typedef std::pair<std::string, bool> IdPart;
+typedef std::string IdPart;
 
 extern std::vector<std::string> strings;
 

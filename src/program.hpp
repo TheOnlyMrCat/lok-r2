@@ -2,6 +2,7 @@
 
 #include "clok.hpp"
 #include <map>
+#include <unordered_map>
 
 #include <valuable/value-ptr.hpp>
 namespace val=valuable;
@@ -43,7 +44,7 @@ struct Identifier {
 };
 
 struct Attributes {
-	std::map<std::string, std::string> attrs;
+	std::unordered_map<std::string, std::string> attrs;
 };
 
 class Symbol {
@@ -51,6 +52,8 @@ public:
 	Symbol(NodePtr& node, bool isType, ProgramContext& pc);
 	Symbol(Type, Identifier);
 	Symbol(Type, Identifier, Attributes);
+
+	void fillAttributes(NodePtr&);
 
 	std::string toLokConv();
 	std::string toCxxConv();

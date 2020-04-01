@@ -10,39 +10,58 @@ namespace bfs = boost::filesystem;
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {
 		if (node->type == NodeType::DECL) {
+			PLOGD << "Found declaration";
 			Symbol s = Symbol(node, false, context);
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
 		} else if (node->type == NodeType::TYPEDECL) {
-			context.currentNamespace.push_back(std::make_pair(strings[node->value.valC], true));
+			PLOGD << "Found type declaration";
+			context.currentNamespace.push_back(strings[node->value.valC]);
 			findSymbols(node->children[0]->children[0]);
 			context.currentNamespace.pop_back();
 			Symbol s = Symbol(node, true, context);
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
 		} else if (node->type == NodeType::CTORDEF) {
+			PLOGD << "Found constructor definition";
 			auto ctorname = std::vector<IdPart>(context.currentNamespace);
 			ctorname.emplace_back("new", false);
-			Symbol s = Symbol(Type(SingleType(Identifier(context.currentNamespace))), ctorname);
-			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
-			if (s.attr.attrs.count("forced") > 0) {
-				std::vector<Type> params = s.type.func->input.types;
+			std::vector<Type> params;
+			for (auto& param : node->children[0]->children) {
+				params.emplace_back(param->children[0], context);
+			}
+			Symbol s = Symbol(ReturningType(TupleType(params), Type(SingleType(Identifier(context.currentNamespace)))), ctorname);
+			if (node->children[node->children.size() - 1]->type == NodeType::ATTRS) {
+				s.fillAttributes(node->children[node->children.size() - 1]);
+			}
+			if (s.attr.attrs.find("forced") != s.attr.attrs.end()) {
+				PLOGD << "(Constructor is forced constructor)";
 				if (params.size() > 1) {
 					PLOGE << "Forced constructor with more than one parameter"; //* Error location
-					throw; //? Convert to tuple?
+					throw; //? Convert to forced tuple upgrade?
 				}
-				context.forcedConstructors.emplace(params[1], s);
+				context.forcedConstructors.emplace(std::make_pair(params[0], s));
 			}
+			context.symbols.emplace(std::make_pair(s.id, s));
 		} else if (node->type == NodeType::DTORDEF) {
+			PLOGD << "Found destructor definition";
 			auto dtorname = std::vector<IdPart>(context.currentNamespace);
 			dtorname.emplace_back("del", false);
 			Symbol s = Symbol(Type(SingleType(Identifier(context.currentNamespace))), dtorname);
+			if (node->children[node->children.size() - 1]->type == NodeType::ATTRS) {
+				s.fillAttributes(node->children[node->children.size() - 1]);
+			}
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
 		} else if (node->type == NodeType::OPOVERLOAD) {
+			PLOGD << "Found operator overload definition";
 			auto overloadname = std::vector<IdPart>(context.currentNamespace);
 			overloadname.emplace_back(strings[node->value.valC], false);
 			Symbol s = Symbol(typeFromFunction(node->children[0], context), overloadname);
+			if (node->children[node->children.size() - 1]->type == NodeType::ATTRS) {
+				s.fillAttributes(node->children[node->children.size() - 1]);
+			}
 			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
 			context.opOverloads.emplace(strings[node->value.valC], s);
 		} else if (node->type == NodeType::NAMESPACE) {
+			PLOGD << "Found namespace statement";
 			context.currentNamespace = Identifier(node->children[0], true, context).parts;
 			findSymbols(node->children[1]);
 			context.currentNamespace.clear();
@@ -85,26 +104,31 @@ Type checkTuple(TupleType l, TupleType r, std::string op, ProgramContext &pc) {
 	return valid ? Type(types) : Type();
 }
 
+Expr *forceUpgrade(Expr *expr, Type finalType, ProgramContext &pc) {
+	Type type = expr->type;
+	auto iter = pc.forcedConstructors.equal_range(type);
+	std::vector<Symbol> possibleConstructors;
+	for (auto i = iter.first; i != iter.second; i++) {
+		possibleConstructors.push_back(i->second);
+	}
+	if (possibleConstructors.size() > 0) {
+		auto found = std::find_if(possibleConstructors.begin(), possibleConstructors.end(), [finalType](const Symbol& s) { return s.type.func->output == finalType; });
+		if (found != possibleConstructors.end()) {
+			return new CallExpr(new SymbolExpr(*found), ArgsExpr({expr}));
+		} else if (possibleConstructors.size() == 1) {
+			return new CallExpr(new SymbolExpr(possibleConstructors[0]), ArgsExpr({expr}));
+		} else {
+			PLOGW << "Multiple forced constructors can operate on expression"; //* Warning location
+		}
+	}
+	return expr;
+} 
+
 Expr *coerceType(Expr *expr, Type finalType, ProgramContext &pc) {
 	Type type = expr->type;
 	if (type == finalType) return expr;
 	// Forced upgrades
-	auto forced = pc.forcedConstructors.find(type);
-	if (forced != pc.forcedConstructors.end()) {
-		auto iter = pc.forcedConstructors.equal_range(forced->first);
-		std::vector<Symbol> possibleConstructors;
-		for (auto i = iter.first; i != iter.second; i++) {
-			possibleConstructors.push_back(i->second);
-		}
-		if (possibleConstructors.size() > 1) {
-			auto found = std::find_if(possibleConstructors.begin(), possibleConstructors.end(), [finalType](const Symbol& s) { return s.type.func->output == finalType; });
-			if (found != possibleConstructors.end()) {
-				return new CallExpr(new SymbolExpr(*found), ArgsExpr({expr}));
-			}
-		} else {
-			return new CallExpr(new SymbolExpr(possibleConstructors[0]), ArgsExpr({expr}));
-		}
-	}
+	
 	return nullptr;
 }
 
@@ -164,18 +188,18 @@ Statement *Program::_extrapStmt(std::unique_ptr<Node>& node) {
 	Statement *s;
 	switch (node->type) {
 		case NodeType::DECL: {
-			PLOGD << "A variable declaration";
-			Identifier id = Identifier({{strings[node->value.valC], false}});
-			Type type;
-			int expressionIndex = 0;
-			if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
-				type = Type(node->children[0], context);
-				expressionIndex = 1;
-			}
-			Expr *expr = nullptr;
-			if (node->children.size() > expressionIndex && node->children[expressionIndex]->type != NodeType::ATTRS) {
-				expr = _extrapolate(node->children[expressionIndex]);
-				if (type.typeType != -1 && !(expr->type == type)) {
+				PLOGD << "A variable declaration";
+				Identifier id = Identifier({{strings[node->value.valC], false}});
+				Type type;
+				int expressionIndex = 0;
+				if (node->children[0]->type == NodeType::TYPESINGLE || node->children[0]->type == NodeType::TYPEMULTI || node->children[0]->type == NodeType::TYPEFN) {
+					type = Type(node->children[0], context);
+					expressionIndex = 1;
+				}
+				Expr *expr = nullptr;
+				if (node->children.size() > expressionIndex && node->children[expressionIndex]->type != NodeType::ATTRS) {
+					expr = forceUpgrade(_extrapolate(node->children[expressionIndex]), type, context);
+					if (type.typeType != -1 && !(expr->type == type)) {
 					PLOGE << "No bad type doesn't match"; //* Error location
 					throw;
 				} else {
@@ -257,8 +281,7 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 		case NodeType::EXPRBASIC: {
 			PLOGD << "A basic expression, containing...";
 			Expr *left = _extrapolate(node->children[0]);
-			Expr *fLeft = coerceType(left, Type(), context);
-			if (!fLeft) fLeft = left;
+			Expr *fLeft = forceUpgrade(left, Type(), context);
 			if (node->children.size() > 1) {
 				Expr *right = _extrapolate(node->children[1]);
 				Type lType = fLeft->type;
@@ -280,12 +303,10 @@ Expr *Program::_extrapolate(std::unique_ptr<Node>& node) {
 					}
 					return new CallExpr(fLeft, ArgsExpr(exprs));
 				} else if (lType.typeType == 1) {
-					Expr *fRight = coerceType(right, Type(), context);
-					if (!fRight) fRight = right;
+					Expr *fRight = forceUpgrade(right, Type(), context);
 					return getOverload(fLeft, fRight, op, context);
 				} else if (lType.typeType == 0) {
-					Expr *fRight = coerceType(right, Type(), context);
-					if (!fRight) fRight = right;
+					Expr *fRight = forceUpgrade(right, Type(), context);
 					return getOverload(fLeft, fRight, op, context);
 				} else PLOGF << "AAAAAAAAAA"; throw; // I don't know what would have happened here but it's not pretty
 			} else {
