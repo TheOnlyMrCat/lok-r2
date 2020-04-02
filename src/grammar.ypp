@@ -74,8 +74,8 @@ struct Node {
 %token COMPADD "+=" COMPSUB "-=" COMPMUL "*=" COMPDIV "/=" COMPMOD "%=" COMPAND "&=" COMPIOR "|=" COMPXOR "^=" COMPASL "<<=" COMPASR ">>=" COMPUSR ">>>="
 %token END 0
 
-%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" STRUCTK "struct" CLASSK "class" NAMESPACEK "namespace"
-%token DELETEK "delete" OPERATORK "operator" RETURNK "return"
+%token RUNK "run" LOADK "load" IFK "if" ELSEK "else" FORK "for" WHILEK "while" NEWK "new" TYPEK "type" NAMESPACEK "namespace"
+%token DELETEK "delete" OPERATORK "operator" RETURNK "return" CONTINUEK "continue" BREAKK "break"
 
 %type <strings_t> CompAssignOperator
 %type <NodePtr> LoadStatement NamespaceStatement NamespaceItems FileLocator FilePath FullyQualifiedPath QualifiedPath NamespaceItem RunDeclaration ClassItem ClassBody
@@ -195,10 +195,8 @@ FunctionBody:
   ;
 
 ClassDefinition:
-    "struct" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::STRUCTDEF, @$); addChild($$, $6); addChild($$, $3); }
-  | "struct" ">=>" '{' ClassBody '}'                { $$ = std::make_unique<Node>(1, NodeType::STRUCTDEF, @$); addChild($$, $4); }
-  | "class" "=>" TupleType ">=>" '{' ClassBody '}'  { $$ = std::make_unique<Node>(2, NodeType::CLASSDEF, @$); addChild($$, $6); addChild($$, $3); }
-  | "class" ">=>" '{' ClassBody '}'                 { $$ = std::make_unique<Node>(1, NodeType::CLASSDEF, @$); addChild($$, $4); }
+    "type" "=>" TupleType ">=>" '{' ClassBody '}' { $$ = std::make_unique<Node>(2, NodeType::TYPEDEF, @$); addChild($$, $6); addChild($$, $3); }
+  | "type" ">=>" '{' ClassBody '}'                { $$ = std::make_unique<Node>(1, NodeType::TYPEDEF, @$); addChild($$, $4); }
   ;
 
 ClassBody:
