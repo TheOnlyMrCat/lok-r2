@@ -157,6 +157,12 @@ int main(int argc, char *argv[]) {
 	std::unordered_map<std::string, Program> programs;
 
 	for (auto& syntax : syntaxes) {
+		PLOGI << "Locating type definitions for " << syntax.first;
+		programs[syntax.first] = Program();
+		programs[syntax.first].locateTypes(syntax.second);
+	}
+
+	for (auto& syntax : syntaxes) {
 		PLOGI << "Identifying symbols for " << syntax.first;
 		programs[syntax.first] = Program();
 		programs[syntax.first].findSymbols(syntax.second);

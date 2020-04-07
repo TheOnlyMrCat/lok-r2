@@ -7,6 +7,7 @@
 #include <valuable/value-ptr.hpp>
 namespace val=valuable;
 
+class Symbol;
 struct SingleType;
 struct TupleType;
 struct ReturningType;
@@ -14,6 +15,12 @@ struct ReturningType;
 struct Value;
 
 struct ProgramContext;
+
+struct TypeRef {
+	TypeRef(Identifier);
+
+	std::vector<Symbol>
+};
 
 struct Type {
 	Type();
@@ -199,6 +206,7 @@ struct StackFrame {
 
 struct ProgramContext {
 	std::vector<IdPart> currentNamespace;
+	std::vector<Identifier> types;
 	std::map<Identifier, Symbol> symbols;
 	std::map<std::string, std::map<Identifier, Symbol>> externalSymbols;
 
@@ -219,8 +227,9 @@ struct ExtrapSymbol {
 
 class Program {
 public:
+	void locateTypes(std::unique_ptr<Node>& tree);
 	void findSymbols(std::unique_ptr<Node>& tree);
-	void extrapolate(std::unique_ptr<Node>& tree, std::unordered_map<std::string, Program>& otherPrograms, std::string workingDir);
+	void extrapolate(std::unique_ptr<Node>& tree, std::unordered_map<std::string, Program>& otherProgram, std::string workingDir);
 
 private:
 	ProgramContext context;

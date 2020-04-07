@@ -7,6 +7,19 @@
 #include <boost/filesystem.hpp>
 namespace bfs = boost::filesystem;
 
+void Program::locateTypes(std::unique_ptr<Node>& tree) {
+	for (auto& node : tree->children) {
+		if (node->type == NodeType::TYPEDECL) {
+			PLOGD << "Found type declaration";
+		} else if (node->type == NodeType::NAMESPACE) {
+			PLOGD << "Found namespace statement";
+			context.currentNamespace = Identifier(node->children[0], true, context).parts;
+			locateTypes(node->children[1]);
+			context.currentNamespace.clear();
+		}
+	}
+}
+
 void Program::findSymbols(std::unique_ptr<Node>& tree) {
 	for (auto& node : tree->children) {
 		if (node->type == NodeType::DECL) {
@@ -58,7 +71,7 @@ void Program::findSymbols(std::unique_ptr<Node>& tree) {
 			if (node->children[node->children.size() - 1]->type == NodeType::ATTRS) {
 				s.fillAttributes(node->children[node->children.size() - 1]);
 			}
-			context.symbols.emplace(std::make_pair(s.id, std::move(s)));
+			context.symbols.emplace(std::make_pair(s.id, s));
 			context.opOverloads.emplace(strings[node->value.valC], s);
 		} else if (node->type == NodeType::NAMESPACE) {
 			PLOGD << "Found namespace statement";
