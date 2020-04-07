@@ -4,6 +4,8 @@
 ![Build Status](https://img.shields.io/github/workflow/status/TheOnlyMrCat/lok/C++%20CI?logo=github)
 [![Discord server](https://img.shields.io/discord/674174065761583104?color=blueviolet&logo=discord&logoColor=white)](https://discord.gg/nNu3GSs)
 
+**This project is no longer being updated. As with all projects, it has turned into a mess of spaghetti, and I daren't touch it**
+
 This is a compiler for a programming language I am making called lok. Its goal is to have its syntax be as logical
 as possible. For now, snippets of the planned syntax can be seen in the
 [test](https://github.com/TheOnlyMrCat/lok/tree/master/test) folder.
